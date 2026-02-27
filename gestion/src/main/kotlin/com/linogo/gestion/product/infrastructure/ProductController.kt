@@ -39,6 +39,12 @@ class ProductController(
         return ResponseEntity.ok(responses)
     }
 
+    @GetMapping("/category/{categoryId}")
+    fun getByCategoryId(@PathVariable categoryId: Long): ResponseEntity<Any> {
+        val responses = productService.findByCategoryId(categoryId)
+        return ResponseEntity.ok(responses)
+    }
+
     @PutMapping("/{id}")
     fun update(
         @PathVariable id: Long,

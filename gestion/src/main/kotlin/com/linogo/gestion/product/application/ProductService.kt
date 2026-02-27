@@ -1,5 +1,6 @@
 package com.linogo.gestion.product.application
 
+import com.linogo.gestion.category.infrastructure.CategoryRepository
 import com.linogo.gestion.product.domain.Product
 import com.linogo.gestion.product.infrastructure.ProductRepository
 import org.springframework.stereotype.Service
@@ -7,11 +8,17 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class ProductService(
-    private val productRepository: ProductRepository
+    private val productRepository: ProductRepository,
+    private val categoryRepository: CategoryRepository
 ) {
 
     @Transactional
     fun create(request: CreateProductRequest): ProductResponse {
+        val category = request.categoryId?.let { id ->
+            categoryRepository.findById(id)
+                .orElseThrow { IllegalArgumentException("Category with id $id not found") }
+        }
+
         val product = Product(
             id = request.id,
             name = request.name,
@@ -19,7 +26,7 @@ class ProductService(
             stock = request.stock,
             imageUrl = request.imageUrl,
             description = request.description,
-            categoryId = request.categoryId
+            category = category
         )
 
         val saved = productRepository.save(product)
@@ -38,10 +45,20 @@ class ProductService(
         return productRepository.findAll().map { it.toResponse() }
     }
 
+    @Transactional(readOnly = true)
+    fun findByCategoryId(categoryId: Long): List<ProductResponse> {
+        return productRepository.findByCategoryId(categoryId).map { it.toResponse() }
+    }
+
     @Transactional
     fun update(id: Long, request: UpdateProductRequest): ProductResponse {
         val product = productRepository.findById(id)
             .orElseThrow { IllegalArgumentException("Product with id $id not found") }
+
+        val category = request.categoryId?.let { catId ->
+            categoryRepository.findById(catId)
+                .orElseThrow { IllegalArgumentException("Category with id $catId not found") }
+        }
 
         val updated = product.copy(
             name = request.name,
@@ -49,7 +66,7 @@ class ProductService(
             stock = request.stock,
             imageUrl = request.imageUrl,
             description = request.description,
-            categoryId = request.categoryId,
+            category = category,
             updatedAt = java.time.LocalDateTime.now()
         )
 
@@ -73,7 +90,7 @@ class ProductService(
             stock = this.stock,
             imageUrl = this.imageUrl,
             description = this.description,
-            categoryId = this.categoryId,
+            category = this.category?.let { CategoryResponse(it.id, it.name) },
             createdAt = this.createdAt,
             updatedAt = this.updatedAt
         )
