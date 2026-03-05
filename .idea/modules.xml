@@ -2,6 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.linogo.gestion.iml" filepath="$PROJECT_DIR$/.idea/modules/com.linogo.gestion.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.linogo.gestion.main.iml" filepath="$PROJECT_DIR$/.idea/modules/com.linogo.gestion.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.linogo.gestion.test.iml" filepath="$PROJECT_DIR$/.idea/modules/com.linogo.gestion.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/gestion.iml" filepath="$PROJECT_DIR$/.idea/gestion.iml" />
     </modules>
   </component>

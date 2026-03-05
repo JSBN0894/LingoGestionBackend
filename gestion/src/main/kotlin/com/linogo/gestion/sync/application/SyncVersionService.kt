@@ -12,21 +12,29 @@ class SyncVersionService(
     fun incrementVersion(description: String): Long {
         val currentVersion = syncVersionRepository.findById(1L).orElse(null)
         val newVersion = (currentVersion?.version ?: 0L) + 1
-        
-        val syncVersion = currentVersion?.copy(
-            version = newVersion,
-            description = description
-        ) ?: com.linogo.gestion.sync.domain.SyncVersion(
-            id = 1L,
-            version = newVersion,
-            description = description
-        )
-        
-        syncVersionRepository.save(syncVersion)
-        return newVersion
+
+        val syncVersion = if (currentVersion != null) {
+            syncVersionRepository.save(
+                com.linogo.gestion.sync.domain.SyncVersion(
+                    id = 1L,
+                    version = newVersion,
+                    description = description
+                )
+            )
+        } else {
+            syncVersionRepository.save(
+                com.linogo.gestion.sync.domain.SyncVersion(
+                    id = 1L,
+                    version = newVersion,
+                    description = description
+                )
+            )
+        }
+
+        return syncVersion.version
     }
 
     fun getCurrentVersion(): Long {
-        return syncVersionRepository.findById(1L).orElse(0L).version
+        return syncVersionRepository.findById(1L).orElse(null)?.version ?: 0L
     }
 }

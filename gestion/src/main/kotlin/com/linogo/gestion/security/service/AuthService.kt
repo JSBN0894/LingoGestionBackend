@@ -1,9 +1,7 @@
 package com.linogo.gestion.security.service
 
-import com.bucket4j.Bandwidth
-import com.bucket4j.Bucket
-import com.bucket4j.Bucket4j
-import com.bucket4j.Refill
+import io.github.bucket4j.Bandwidth
+import io.github.bucket4j.Bucket
 import com.linogo.gestion.security.application.AuthResponse
 import com.linogo.gestion.security.application.LoginRequest
 import com.linogo.gestion.security.application.RegisterRequest
@@ -23,6 +21,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 
 @Service
 class AuthService(
@@ -35,13 +34,13 @@ class AuthService(
 ) {
 
     private val logger = LoggerFactory.getLogger(AuthService::class.java)
-    
-    // Rate limiting buckets por IP
-    private val loginAttempts: MutableMap<String, Bucket> = mutableMapOf()
+
+    // 1. Usar ConcurrentHashMap para evitar problemas de concurrencia
+    // 2. Tipar explícitamente <String, Bucket> para evitar el error de inferencia <K, V>
+    private val loginAttempts: MutableMap<String, Bucket> = ConcurrentHashMap<String, Bucket>()
 
     @Transactional
     fun login(request: LoginRequest, clientIp: String): AuthResponse {
-        // Verificar rate limiting
         checkRateLimit(clientIp)
 
         try {
@@ -71,13 +70,13 @@ class AuthService(
         )
     }
 
+    // ... (El resto de tus métodos register, refreshToken, logout se mantienen igual)
+
     @Transactional
     fun register(request: RegisterRequest): AuthResponse {
-        // Validar que no exista
         if (userDetailsService.existsByUsername(request.username)) {
             throw IllegalArgumentException("El username ya está en uso")
         }
-
         if (userDetailsService.existsByEmail(request.email)) {
             throw IllegalArgumentException("El email ya está registrado")
         }
@@ -86,15 +85,13 @@ class AuthService(
             id = java.util.UUID.randomUUID().toString(),
             username = request.username,
             email = request.email,
-            password = passwordEncoder.encode(request.password),
+            password = passwordEncoder.encode(request.password!!),
             fullName = request.fullName,
             role = Role.USER,
             isEnabled = true
         )
 
         val savedUser = userRepository.save(user)
-        logger.info("Usuario registrado: ${savedUser.username}")
-
         val accessToken = jwtTokenProvider.generateAccessToken(savedUser)
         val refreshToken = createRefreshToken(savedUser)
 
@@ -112,7 +109,7 @@ class AuthService(
             ?: throw IllegalArgumentException("Refresh token inválido")
 
         if (refreshTokenEntity.isRevoked) {
-            revokeAllUserTokens(refreshTokenEntity.user.id)
+            revokeAllUserTokens(refreshTokenEntity.user.id!!)
             throw IllegalArgumentException("Refresh token revocado")
         }
 
@@ -122,8 +119,6 @@ class AuthService(
         }
 
         val user = refreshTokenEntity.user
-        
-        // Revocar token anterior y crear uno nuevo (rotation)
         refreshTokenRepository.delete(refreshTokenEntity)
         val newRefreshToken = createRefreshToken(user)
         val newAccessToken = jwtTokenProvider.generateAccessToken(user)
@@ -139,12 +134,10 @@ class AuthService(
     @Transactional
     fun logout(userId: String) {
         revokeAllUserTokens(userId)
-        logger.info("Logout realizado para usuario: $userId")
     }
 
     private fun createRefreshToken(user: User): String {
-        // Eliminar refresh token existente si hay
-        refreshTokenRepository.findByUserId(user.id)?.let {
+        refreshTokenRepository.findByUserId(user.id!!)?.let {
             refreshTokenRepository.delete(it)
         }
 
@@ -153,7 +146,7 @@ class AuthService(
             id = java.util.UUID.randomUUID().toString(),
             user = user,
             token = refreshToken,
-            expiryDate = Instant.now().plusMillis(jwtTokenProvider.getAccessTokenExpirationMs() * 7), // 7 días
+            expiryDate = Instant.now().plusMillis(jwtTokenProvider.getAccessTokenExpirationMs() * 7),
             isRevoked = false
         )
 
@@ -168,12 +161,14 @@ class AuthService(
         }
     }
 
-    // Rate limiting: 5 intentos por minuto por IP
+    // --- CORRECCIONES DE BUCKET4J 8.x ---
+
     private fun checkRateLimit(clientIp: String) {
         val bucket = loginAttempts.computeIfAbsent(clientIp) {
             createBucket()
         }
 
+        // tryConsume(1) sigue siendo válido en la 8.x
         if (!bucket.tryConsume(1)) {
             logger.warn("Rate limit excedido para IP: $clientIp")
             throw RuntimeException("Demasiados intentos de login. Intente en 1 minuto.")
@@ -181,8 +176,13 @@ class AuthService(
     }
 
     private fun createBucket(): Bucket {
-        val limit = Bandwidth.simple(5, Duration.ofMinutes(1))
-        return Bucket4j.builder()
+        // En la 8.x se recomienda usar el Builder para mayor claridad
+        val limit = Bandwidth.builder()
+            .capacity(5)
+            .refillGreedy(5, Duration.ofMinutes(1))
+            .build()
+
+        return Bucket.builder() // Cambiado de Bucket4j.builder() a Bucket.builder()
             .addLimit(limit)
             .build()
     }
@@ -190,7 +190,7 @@ class AuthService(
 
 private fun User.toUserResponse(): UserResponse {
     return UserResponse(
-        id = this.id,
+        id = this.id ?: "",
         username = this.username,
         email = this.email,
         fullName = this.fullName,

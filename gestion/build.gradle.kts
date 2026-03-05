@@ -1,7 +1,8 @@
 plugins {
 	kotlin("jvm") version "2.2.21"
 	kotlin("plugin.spring") version "2.2.21"
-	id("org.springframework.boot") version "4.0.3"
+	// Usamos una versión estable y real
+	id("org.springframework.boot") version "3.4.3"
 	id("io.spring.dependency-management") version "1.1.7"
 	kotlin("plugin.jpa") version "2.2.21"
 }
@@ -24,27 +25,25 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
-	implementation("org.springframework.boot:spring-boot-starter-webmvc")
+	implementation("org.springframework.boot:spring-boot-starter-web") // Usa 'web' en lugar de 'webmvc' si usas Spring Boot
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
-	implementation("tools.jackson.module:jackson-module-kotlin")
+	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
-	
+
 	// JWT
 	implementation("io.jsonwebtoken:jjwt-api:0.12.6")
 	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
-	
-	// Rate limiting
-	implementation("com.bucket4j:bucket4j_jdk17-core:8.14.0")
-	
+
+	// Rate limiting (versión verificada)
+	implementation("com.bucket4j:bucket4j-core:8.10.1")
+
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 	runtimeOnly("org.postgresql:postgresql")
-	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
-	testImplementation("org.springframework.boot:spring-boot-starter-security-test")
-	testImplementation("org.springframework.boot:spring-boot-starter-validation-test")
-	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+
+	// Dependencias de test unificadas
+	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 kotlin {

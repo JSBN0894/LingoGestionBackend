@@ -10,7 +10,6 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -32,7 +31,7 @@ class SecurityConfig(
         http
             // CSRF deshabilitado para API REST stateless
             // CSRF no es necesario cuando se usa JWT en headers Authorization
-            .csrf(AbstractHttpConfigurer::disable)
+            .csrf { csrf -> csrf.disable() }
             
             // CORS configurado correctamente
             .cors { cors -> cors.configurationSource(corsConfigurationSource()) }
@@ -95,8 +94,8 @@ class SecurityConfig(
         passwordEncoder: PasswordEncoder
     ): AuthenticationManager {
         val authenticationProvider = DaoAuthenticationProvider().apply {
-            setUserDetailsService(userDetailsService)
             setPasswordEncoder(passwordEncoder)
+            setUserDetailsService(userDetailsService)
         }
         return ProviderManager(authenticationProvider)
     }

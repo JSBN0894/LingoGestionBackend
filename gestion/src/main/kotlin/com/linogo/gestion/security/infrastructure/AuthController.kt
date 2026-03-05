@@ -27,11 +27,11 @@ class AuthController(
     @ApiResponse(responseCode = "200", description = "Login exitoso")
     @ApiResponse(responseCode = "401", description = "Credenciales inválidas")
     fun login(
-        @Valid @RequestBody request: LoginRequest,
+        @Valid @RequestBody loginRequest: LoginRequest,
         request: HttpServletRequest
     ): ResponseEntity<AuthResponse> {
         val clientIp = getClientIp(request)
-        return ResponseEntity.ok(authService.login(request, clientIp))
+        return ResponseEntity.ok(authService.login(loginRequest, clientIp))
     }
 
     @PostMapping("/register")

@@ -5,23 +5,22 @@ import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 import java.time.LocalDateTime
-import java.util.*
 
 @Entity
 @Table(name = "users")
-data class User(
+class User(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    val id: String,
+    val id: String? = null,
 
     @Column(unique = true, nullable = false, length = 50)
-    val username: String,
+    private val username: String, // Cambiado a private para evitar el getter automático de Kotlin
 
     @Column(unique = true, nullable = false, length = 100)
     val email: String,
 
     @Column(nullable = false)
-    val password: String,
+    private val password: String, // Cambiado a private
 
     @Column(nullable = false)
     val fullName: String,
@@ -30,8 +29,8 @@ data class User(
     @Column(nullable = false)
     val role: Role = Role.USER,
 
-    @Column(nullable = false)
-    val isEnabled: Boolean = true,
+    @Column(name = "is_enabled", nullable = false)
+    private val isEnabled: Boolean = true, // Cambiado a private
 
     @Column(nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
@@ -40,17 +39,21 @@ data class User(
     val updatedAt: LocalDateTime = LocalDateTime.now()
 ) : UserDetails {
 
+    // Implementación de UserDetails vinculada a las propiedades privadas
+    override fun getUsername(): String = username
+
+    override fun getPassword(): String = password
+
+    override fun isEnabled(): Boolean = isEnabled
+
     override fun getAuthorities(): Collection<GrantedAuthority> =
         listOf(SimpleGrantedAuthority("ROLE_${role.name}"))
 
     override fun isAccountNonExpired(): Boolean = true
     override fun isAccountNonLocked(): Boolean = true
     override fun isCredentialsNonExpired(): Boolean = true
-    override fun isEnabled(): Boolean = this.isEnabled
 }
 
 enum class Role {
-    USER,       // Rol básico para clientes
-    ADMIN,      // Administrador con acceso completo
-    SELLER      // Vendedor con permisos limitados
+    USER, ADMIN, SELLER
 }

@@ -21,7 +21,7 @@ data class RefreshToken(
     val expiryDate: Instant,
 
     @Column(nullable = false)
-    val isRevoked: Boolean = false,
+    var isRevoked: Boolean = false,
 
     @Column(nullable = false, updatable = false)
     val createdAt: Instant = Instant.now()

@@ -8,7 +8,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.stereotype.Component
-import java.security.Key
+import java.security.spec.KeySpec
+import javax.crypto.SecretKey
 import java.util.*
 
 @Component
@@ -24,7 +25,7 @@ class JwtTokenProvider(
 ) {
 
     private val logger = LoggerFactory.getLogger(JwtTokenProvider::class.java)
-    private val signingKey: Key by lazy { Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret)) }
+    private val signingKey: SecretKey by lazy { Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret)) as SecretKey }
 
     fun generateAccessToken(user: User): String {
         return generateToken(user, accessTokenExpiration, TokenType.ACCESS)
@@ -68,10 +69,10 @@ class JwtTokenProvider(
 
     fun isTokenValid(token: String): Boolean {
         return try {
-            Jwts.parserBuilder()
-                .setSigningKey(signingKey)
+            Jwts.parser()
+                .verifyWith(signingKey)
                 .build()
-                .parseClaimsJws(token)
+                .parseSignedClaims(token)
             true
         } catch (e: SecurityException) {
             logger.warn("Token inválido: ${e.message}")
@@ -93,11 +94,11 @@ class JwtTokenProvider(
 
     fun isTokenExpired(token: String): Boolean {
         return try {
-            val claims = Jwts.parserBuilder()
-                .setSigningKey(signingKey)
+            val claims = Jwts.parser()
+                .verifyWith(signingKey)
                 .build()
-                .parseClaimsJws(token)
-                .body
+                .parseSignedClaims(token)
+                .payload
             claims.expiration.before(Date())
         } catch (e: ExpiredJwtException) {
             true
@@ -105,11 +106,11 @@ class JwtTokenProvider(
     }
 
     private fun getClaimsFromToken(token: String): Claims {
-        return Jwts.parserBuilder()
-            .setSigningKey(signingKey)
+        return Jwts.parser()
+            .verifyWith(signingKey)
             .build()
-            .parseClaimsJws(token)
-            .body
+            .parseSignedClaims(token)
+            .payload
     }
 
     fun getAccessTokenExpirationMs(): Long = accessTokenExpiration
