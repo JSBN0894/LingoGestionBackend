@@ -24,14 +24,12 @@ class OrderService(
             .orElseThrow { IllegalArgumentException("State with id ${request.operationStateId} not found") }
 
         val order = Order(
-            id = request.id,
             client = client,
             operationState = operationState,
             orderPrice = request.orderPrice,
             orderAddress = request.orderAddress,
             orderPhone = request.orderPhone,
-            orderCity = request.orderCity,
-            updatedAt = LocalDateTime.now()
+            orderCity = request.orderCity
         )
 
         return orderRepository.save(order).toResponse()
@@ -79,7 +77,7 @@ class OrderService(
 
     private fun Order.toResponse(): OrderResponse {
         return OrderResponse(
-            id = this.id,
+            id = this.id!!,
             clientId = this.client.idUser,
             clientName = this.client.name,
             operationStateId = this.operationState.id,
@@ -95,7 +93,6 @@ class OrderService(
 }
 
 data class CreateOrderRequest(
-    val id: Long,
     val clientId: String,
     val operationStateId: Long,
     val orderPrice: Long,

@@ -68,7 +68,6 @@ class CreateOrderCompleteService(
 
         // 5. Crear la orden
         val order = Order(
-            id = generateOrderId(),
             client = client,
             operationState = operationState,
             orderPrice = request.order.orderPrice,
@@ -95,13 +94,9 @@ class CreateOrderCompleteService(
         return savedOrder.toResponse()
     }
 
-    private fun generateOrderId(): Long {
-        return System.currentTimeMillis() % 1000000000
-    }
-
     private fun Order.toResponse(): OrderCompleteResponse {
         return OrderCompleteResponse(
-            id = this.id,
+            id = this.id!!,
             clientId = this.client.idUser,
             clientName = this.client.name,
             operationStateId = this.operationState.id,

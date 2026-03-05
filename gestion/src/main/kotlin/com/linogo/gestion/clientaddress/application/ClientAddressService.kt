@@ -62,7 +62,7 @@ class ClientAddressService(
 
     private fun ClientAddress.toResponse(): ClientAddressResponse {
         return ClientAddressResponse(
-            id = this.id,
+            id = this.id!!,
             clientId = this.client.idUser,
             clientName = this.client.name,
             address = this.address,

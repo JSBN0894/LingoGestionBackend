@@ -24,24 +24,22 @@ class ShipmentService(
             .orElseThrow { IllegalArgumentException("ShipmentState with id ${request.shippingStateId} not found") }
 
         val shipment = Shipment(
-            trackingNumber = request.trackingNumber,
             order = order,
             shippingState = shipmentState,
             carrier = request.carrier,
             isCashOnDelivery = request.isCashOnDelivery,
             shippingCost = request.shippingCost,
             estimateDeliveryDate = request.estimateDeliveryDate,
-            weight = request.weight,
-            updatedAt = LocalDateTime.now()
+            weight = request.weight
         )
 
         return shipmentRepository.save(shipment).toResponse()
     }
 
     @Transactional(readOnly = true)
-    fun findByTrackingNumber(trackingNumber: String): ShipmentResponse {
-        val shipment = shipmentRepository.findById(trackingNumber)
-            .orElseThrow { IllegalArgumentException("Shipment with trackingNumber $trackingNumber not found") }
+    fun findById(id: Long): ShipmentResponse {
+        val shipment = shipmentRepository.findById(id)
+            .orElseThrow { IllegalArgumentException("Shipment with id $id not found") }
         return shipment.toResponse()
     }
 
@@ -51,9 +49,9 @@ class ShipmentService(
     }
 
     @Transactional
-    fun update(trackingNumber: String, request: UpdateShipmentRequest): ShipmentResponse {
-        val shipment = shipmentRepository.findById(trackingNumber)
-            .orElseThrow { IllegalArgumentException("Shipment with trackingNumber $trackingNumber not found") }
+    fun update(id: Long, request: UpdateShipmentRequest): ShipmentResponse {
+        val shipment = shipmentRepository.findById(id)
+            .orElseThrow { IllegalArgumentException("Shipment with id $id not found") }
 
         val shipmentState = shipmentStateRepository.findById(request.shippingStateId)
             .orElseThrow { IllegalArgumentException("ShipmentState with id ${request.shippingStateId} not found") }
@@ -64,25 +62,24 @@ class ShipmentService(
             isCashOnDelivery = request.isCashOnDelivery,
             shippingCost = request.shippingCost,
             estimateDeliveryDate = request.estimateDeliveryDate,
-            weight = request.weight,
-            updatedAt = LocalDateTime.now()
+            weight = request.weight
         )
 
         return shipmentRepository.save(updated).toResponse()
     }
 
     @Transactional
-    fun delete(trackingNumber: String) {
-        if (!shipmentRepository.existsById(trackingNumber)) {
-            throw IllegalArgumentException("Shipment with trackingNumber $trackingNumber not found")
+    fun delete(id: Long) {
+        if (!shipmentRepository.existsById(id)) {
+            throw IllegalArgumentException("Shipment with id $id not found")
         }
-        shipmentRepository.deleteById(trackingNumber)
+        shipmentRepository.deleteById(id)
     }
 
     private fun Shipment.toResponse(): ShipmentResponse {
         return ShipmentResponse(
-            trackingNumber = this.trackingNumber,
-            orderId = this.order.id,
+            id = this.id!!,
+            orderId = this.order.id!!,
             carrier = this.carrier,
             isCashOnDelivery = this.isCashOnDelivery,
             shippingStateId = this.shippingState.id,
@@ -97,7 +94,6 @@ class ShipmentService(
 }
 
 data class CreateShipmentRequest(
-    val trackingNumber: String,
     val orderId: Long,
     val carrier: String = "Inter rapidisimo",
     val isCashOnDelivery: Boolean = true,
@@ -117,7 +113,7 @@ data class UpdateShipmentRequest(
 )
 
 data class ShipmentResponse(
-    val trackingNumber: String,
+    val id: Long,
     val orderId: Long,
     val carrier: String,
     val isCashOnDelivery: Boolean,

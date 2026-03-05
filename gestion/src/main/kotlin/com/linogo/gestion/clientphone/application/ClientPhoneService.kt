@@ -20,8 +20,7 @@ class ClientPhoneService(
 
         val clientPhone = ClientPhone(
             client = client,
-            phone = request.phone,
-            updatedAt = LocalDateTime.now()
+            phone = request.phone
         )
 
         return clientPhoneRepository.save(clientPhone).toResponse()
@@ -60,7 +59,7 @@ class ClientPhoneService(
 
     private fun ClientPhone.toResponse(): ClientPhoneResponse {
         return ClientPhoneResponse(
-            id = this.id,
+            id = this.id!!,
             clientId = this.client.idUser,
             clientName = this.client.name,
             phone = this.phone,

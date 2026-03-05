@@ -3,13 +3,15 @@ package com.linogo.gestion.product.application
 import com.linogo.gestion.category.infrastructure.CategoryRepository
 import com.linogo.gestion.product.domain.Product
 import com.linogo.gestion.product.infrastructure.ProductRepository
+import com.linogo.gestion.sync.application.SyncVersionService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class ProductService(
     private val productRepository: ProductRepository,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val syncVersionService: SyncVersionService
 ) {
 
     @Transactional
@@ -30,6 +32,7 @@ class ProductService(
         )
 
         val saved = productRepository.save(product)
+        syncVersionService.incrementVersion("Producto creado: ${request.name}")
         return saved.toResponse()
     }
 
@@ -71,15 +74,17 @@ class ProductService(
         )
 
         val saved = productRepository.save(updated)
+        syncVersionService.incrementVersion("Producto actualizado: ${request.name}")
         return saved.toResponse()
     }
 
     @Transactional
     fun delete(id: Long) {
-        if (!productRepository.existsById(id)) {
-            throw IllegalArgumentException("Product with id $id not found")
-        }
+        val product = productRepository.findById(id)
+            .orElseThrow { IllegalArgumentException("Product with id $id not found") }
+        val productName = product.name
         productRepository.deleteById(id)
+        syncVersionService.incrementVersion("Producto eliminado: $productName")
     }
 
     private fun Product.toResponse(): ProductResponse {

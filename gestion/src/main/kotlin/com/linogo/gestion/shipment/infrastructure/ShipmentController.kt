@@ -27,9 +27,9 @@ class ShipmentController(
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
-    @GetMapping("/{trackingNumber}")
-    fun getByTrackingNumber(@PathVariable trackingNumber: String): ResponseEntity<Any> {
-        val response = shipmentService.findByTrackingNumber(trackingNumber)
+    @GetMapping("/{id}")
+    fun getById(@PathVariable id: Long): ResponseEntity<Any> {
+        val response = shipmentService.findById(id)
         return ResponseEntity.ok(response)
     }
 
@@ -39,18 +39,18 @@ class ShipmentController(
         return ResponseEntity.ok(responses)
     }
 
-    @PutMapping("/{trackingNumber}")
+    @PutMapping("/{id}")
     fun update(
-        @PathVariable trackingNumber: String,
+        @PathVariable id: Long,
         @Valid @RequestBody request: UpdateShipmentRequest
     ): ResponseEntity<Any> {
-        val response = shipmentService.update(trackingNumber, request)
+        val response = shipmentService.update(id, request)
         return ResponseEntity.ok(response)
     }
 
-    @DeleteMapping("/{trackingNumber}")
-    fun delete(@PathVariable trackingNumber: String): ResponseEntity<Void> {
-        shipmentService.delete(trackingNumber)
+    @DeleteMapping("/{id}")
+    fun delete(@PathVariable id: Long): ResponseEntity<Void> {
+        shipmentService.delete(id)
         return ResponseEntity.noContent().build()
     }
 }

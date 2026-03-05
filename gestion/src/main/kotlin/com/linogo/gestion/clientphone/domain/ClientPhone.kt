@@ -19,7 +19,7 @@ import java.time.LocalDateTime
 data class ClientPhone(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long,
+    var id: Long? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnore

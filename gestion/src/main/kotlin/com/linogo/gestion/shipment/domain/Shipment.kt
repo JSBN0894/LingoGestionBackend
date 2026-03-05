@@ -3,25 +3,19 @@ package com.linogo.gestion.shipment.domain
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.linogo.gestion.order.domain.Order
 import com.linogo.gestion.shipmentstate.domain.ShipmentState
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.FetchType
-import jakarta.persistence.ForeignKey
-import jakarta.persistence.Id
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
-import jakarta.persistence.Table
+import jakarta.persistence.*
 import java.time.LocalDateTime
 
 @Entity
 @Table(name = "shipments")
 data class Shipment(
     @Id
-    val trackingNumber: String,
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    var id: Long? = null,
 
     @OneToOne(fetch = FetchType.LAZY)
     @JsonIgnore
-    @JoinColumn(name = "order_id", foreignKey = ForeignKey(name = "fk_shipment_order"))
+    @JoinColumn(name = "order_id", foreignKey = ForeignKey(name = "fk_shipment_order"), unique = true)
     val order: Order,
 
     @ManyToOne(fetch = FetchType.LAZY)

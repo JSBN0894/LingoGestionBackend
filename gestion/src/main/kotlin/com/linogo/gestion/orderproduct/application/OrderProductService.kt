@@ -70,8 +70,8 @@ class OrderProductService(
 
     private fun OrderProduct.toResponse(): OrderProductResponse {
         return OrderProductResponse(
-            orderId = this.order.id,
-            productId = this.product.id,
+            orderId = this.order.id!!,
+            productId = this.product.id!!,
             productName = this.product.name,
             quantity = this.quantity,
             price = this.price,
