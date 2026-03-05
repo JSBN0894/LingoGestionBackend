@@ -80,6 +80,19 @@ class GlobalExceptionHandler {
         return ResponseEntity(errorResponse, HttpStatus.FORBIDDEN)
     }
 
+    @ExceptionHandler(org.springframework.security.authentication.InsufficientAuthenticationException::class)
+    fun handleInsufficientAuthenticationException(ex: org.springframework.security.authentication.InsufficientAuthenticationException): ResponseEntity<ErrorResponse> {
+        val errorResponse = ErrorResponse(
+            timestamp = LocalDateTime.now(),
+            status = HttpStatus.UNAUTHORIZED.value(),
+            error = "Unauthorized",
+            message = "Autenticación requerida para acceder a este recurso"
+        )
+
+        logger.warn("Autenticación insuficiente: ${ex.message}")
+        return ResponseEntity(errorResponse, HttpStatus.UNAUTHORIZED)
+    }
+
     @ExceptionHandler(AuthenticationException::class)
     fun handleAuthenticationException(ex: AuthenticationException): ResponseEntity<ErrorResponse> {
         val errorResponse = ErrorResponse(

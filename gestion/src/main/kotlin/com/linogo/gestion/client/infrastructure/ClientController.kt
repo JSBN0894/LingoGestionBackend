@@ -1,5 +1,6 @@
 package com.linogo.gestion.client.infrastructure
 
+import com.linogo.gestion.client.application.ClientResponse
 import com.linogo.gestion.client.application.ClientService
 import com.linogo.gestion.client.application.CreateClientRequest
 import com.linogo.gestion.client.application.UpdateClientRequest
@@ -22,19 +23,19 @@ class ClientController(
 ) {
 
     @PostMapping
-    fun create(@Valid @RequestBody request: CreateClientRequest): ResponseEntity<Any> {
+    fun create(@Valid @RequestBody request: CreateClientRequest): ResponseEntity<ClientResponse> {
         val response = clientService.create(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
     @GetMapping("/{idUser}")
-    fun getById(@PathVariable idUser: String): ResponseEntity<Any> {
+    fun getById(@PathVariable idUser: String): ResponseEntity<ClientResponse> {
         val response = clientService.findById(idUser)
         return ResponseEntity.ok(response)
     }
 
     @GetMapping
-    fun getAll(): ResponseEntity<Any> {
+    fun getAll(): ResponseEntity<List<ClientResponse>> {
         val responses = clientService.findAll()
         return ResponseEntity.ok(responses)
     }
@@ -43,7 +44,7 @@ class ClientController(
     fun update(
         @PathVariable idUser: String,
         @Valid @RequestBody request: UpdateClientRequest
-    ): ResponseEntity<Any> {
+    ): ResponseEntity<ClientResponse> {
         val response = clientService.update(idUser, request)
         return ResponseEntity.ok(response)
     }

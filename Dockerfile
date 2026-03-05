@@ -10,8 +10,9 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
 
-# Forzar el perfil de produccion y puerto para Railway
-ENV SPRING_PROFILES_ACTIVE=prod
+# NOTA: SPRING_PROFILES_ACTIVE ahora se define como variable de entorno 
+# en el Dashboard de Railway por cada ambiente (dev o prod)
+# Por defecto caerá a "default" si no se define.
 
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

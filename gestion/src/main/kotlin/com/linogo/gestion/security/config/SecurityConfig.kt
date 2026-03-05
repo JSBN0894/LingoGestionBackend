@@ -23,31 +23,28 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 class SecurityConfig(
-    private val jwtAuthenticationFilter: JwtAuthenticationFilter
+    private val jwtAuthenticationFilter: JwtAuthenticationFilter,
+    @org.springframework.beans.factory.annotation.Qualifier("handlerExceptionResolver")
+    private val resolver: org.springframework.web.servlet.HandlerExceptionResolver
 ) {
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
             // CSRF deshabilitado para API REST stateless
-            // CSRF no es necesario cuando se usa JWT en headers Authorization
             .csrf { csrf -> csrf.disable() }
             
             // CORS configurado correctamente
             .cors { cors -> cors.configurationSource(corsConfigurationSource()) }
             
-            // Manejo de excepciones
+            // Manejo de excepciones centralizado
             .exceptionHandling { exceptions ->
                 exceptions
                     .authenticationEntryPoint { request, response, authException ->
-                        response.status = 401
-                        response.contentType = "application/json"
-                        response.writer.write("""{"error": "Unauthorized", "message": "Autenticación requerida"}""")
+                        resolver.resolveException(request, response, null, authException)
                     }
                     .accessDeniedHandler { request, response, accessDeniedException ->
-                        response.status = 403
-                        response.contentType = "application/json"
-                        response.writer.write("""{"error": "Forbidden", "message": "Acceso denegado"}""")
+                        resolver.resolveException(request, response, null, accessDeniedException)
                     }
             }
             
