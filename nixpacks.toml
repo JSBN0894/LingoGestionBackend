@@ -1,0 +1,8 @@
+[build]
+command = "cd gestion && ./gradlew bootJar"
+
+[setup]
+aptPkgs = ["openjdk-17-jdk"]
+
+[start]
+command = "java -jar gestion/build/libs/*.jar"
