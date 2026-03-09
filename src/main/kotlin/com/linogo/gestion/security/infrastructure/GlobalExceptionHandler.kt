@@ -1,5 +1,9 @@
 package com.linogo.gestion.security.infrastructure
 
+import com.linogo.gestion.exception.AlreadyExistsException
+import com.linogo.gestion.exception.BusinessException
+import com.linogo.gestion.exception.NotFoundException
+import com.linogo.gestion.exception.ValidationException
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.MalformedJwtException
 import io.jsonwebtoken.UnsupportedJwtException
@@ -54,16 +58,55 @@ class GlobalExceptionHandler {
         return ResponseEntity(errorResponse, HttpStatus.UNAUTHORIZED)
     }
 
-    @ExceptionHandler(IllegalArgumentException::class)
-    fun handleIllegalArgumentException(ex: IllegalArgumentException): ResponseEntity<ErrorResponse> {
+    @ExceptionHandler(NotFoundException::class)
+    fun handleNotFoundException(ex: NotFoundException): ResponseEntity<ErrorResponse> {
+        val errorResponse = ErrorResponse(
+            timestamp = LocalDateTime.now(),
+            status = HttpStatus.NOT_FOUND.value(),
+            error = "Not Found",
+            message = ex.message
+        )
+
+        logger.warn("Recurso no encontrado: ${ex.message}")
+        return ResponseEntity(errorResponse, HttpStatus.NOT_FOUND)
+    }
+
+    @ExceptionHandler(AlreadyExistsException::class)
+    fun handleAlreadyExistsException(ex: AlreadyExistsException): ResponseEntity<ErrorResponse> {
+        val errorResponse = ErrorResponse(
+            timestamp = LocalDateTime.now(),
+            status = HttpStatus.CONFLICT.value(),
+            error = "Conflict",
+            message = ex.message
+        )
+
+        logger.warn("Recurso ya existe: ${ex.message}")
+        return ResponseEntity(errorResponse, HttpStatus.CONFLICT)
+    }
+
+    @ExceptionHandler(ValidationException::class)
+    fun handleValidationException(ex: ValidationException): ResponseEntity<ErrorResponse> {
         val errorResponse = ErrorResponse(
             timestamp = LocalDateTime.now(),
             status = HttpStatus.BAD_REQUEST.value(),
             error = "Bad Request",
-            message = ex.message ?: "Datos inválidos"
+            message = ex.message
         )
 
-        logger.warn("Argumento inválido: ${ex.message}")
+        logger.warn("Validación fallida: ${ex.message}")
+        return ResponseEntity(errorResponse, HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler(BusinessException::class)
+    fun handleBusinessException(ex: BusinessException): ResponseEntity<ErrorResponse> {
+        val errorResponse = ErrorResponse(
+            timestamp = LocalDateTime.now(),
+            status = HttpStatus.BAD_REQUEST.value(),
+            error = "Bad Request",
+            message = ex.message
+        )
+
+        logger.warn("Error de negocio: ${ex.message}")
         return ResponseEntity(errorResponse, HttpStatus.BAD_REQUEST)
     }
 
@@ -130,6 +173,19 @@ class GlobalExceptionHandler {
 
         logger.warn("Token no soportado: ${ex.message}")
         return ResponseEntity(errorResponse, HttpStatus.UNAUTHORIZED)
+    }
+
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgumentException(ex: IllegalArgumentException): ResponseEntity<ErrorResponse> {
+        val errorResponse = ErrorResponse(
+            timestamp = LocalDateTime.now(),
+            status = HttpStatus.BAD_REQUEST.value(),
+            error = "Bad Request",
+            message = ex.message ?: "Datos inválidos"
+        )
+
+        logger.warn("Argumento inválido: ${ex.message}")
+        return ResponseEntity(errorResponse, HttpStatus.BAD_REQUEST)
     }
 
     @ExceptionHandler(IllegalStateException::class)

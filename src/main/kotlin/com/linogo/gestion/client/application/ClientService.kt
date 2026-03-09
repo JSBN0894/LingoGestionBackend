@@ -2,6 +2,8 @@ package com.linogo.gestion.client.application
 
 import com.linogo.gestion.client.domain.Client
 import com.linogo.gestion.client.infrastructure.ClientRepository
+import com.linogo.gestion.exception.AlreadyExistsException
+import com.linogo.gestion.exception.NotFoundException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -13,7 +15,7 @@ class ClientService(
     @Transactional
     fun create(request: CreateClientRequest): ClientResponse {
         if (clientRepository.existsById(request.idUser)) {
-            throw IllegalArgumentException("Client with idUser ${request.idUser} already exists")
+            throw AlreadyExistsException("Client", "idUser", request.idUser)
         }
 
         val client = Client(
@@ -31,7 +33,7 @@ class ClientService(
     @Transactional(readOnly = true)
     fun findById(idUser: String): ClientResponse {
         val client = clientRepository.findById(idUser)
-            .orElseThrow { IllegalArgumentException("Client with idUser $idUser not found") }
+            .orElseThrow { NotFoundException("Client", idUser) }
         return client.toResponse()
     }
 
@@ -43,7 +45,7 @@ class ClientService(
     @Transactional
     fun update(idUser: String, request: UpdateClientRequest): ClientResponse {
         val client = clientRepository.findById(idUser)
-            .orElseThrow { IllegalArgumentException("Client with idUser $idUser not found") }
+            .orElseThrow { NotFoundException("Client", idUser) }
 
         val updated = client.copy(
             name = request.name,
@@ -60,7 +62,7 @@ class ClientService(
     @Transactional
     fun delete(idUser: String) {
         if (!clientRepository.existsById(idUser)) {
-            throw IllegalArgumentException("Client with idUser $idUser not found")
+            throw NotFoundException("Client", idUser)
         }
         clientRepository.deleteById(idUser)
     }
