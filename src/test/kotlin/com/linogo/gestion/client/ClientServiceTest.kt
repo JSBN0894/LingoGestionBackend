@@ -95,7 +95,7 @@ class ClientServiceTest {
 
         assertEquals("Client con idUser 'user_456' ya existe", exception.message)
         verify(clientRepository).existsById(createRequest.idUser)
-        verifyNoInteractions(clientRepository)
+        org.mockito.Mockito.verifyNoMoreInteractions(clientRepository)
     }
 
     @Test

@@ -40,6 +40,7 @@ dependencies {
 
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 	runtimeOnly("org.postgresql:postgresql")
+	testRuntimeOnly("com.h2database:h2")
 
 	// Dependencias de test unificadas
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
