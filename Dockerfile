@@ -14,5 +14,9 @@ COPY --from=builder /app/build/libs/*.jar app.jar
 # Usa 'prod' por defecto para producción
 ENV SPRING_PROFILES_ACTIVE=prod
 
+# Script para convertir DATABASE_URL de Railway a SPRING_DATASOURCE_URL
+# Railway usa 'postgresql://' pero Spring necesita 'jdbc:postgresql://'
+RUN printf '#!/bin/sh\nif [ -n "$DATABASE_URL" ] && [ -z "$SPRING_DATASOURCE_URL" ]; then\n    export SPRING_DATASOURCE_URL="jdbc:${DATABASE_URL}"\nfi\nexec java -jar app.jar\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["/app/entrypoint.sh"]
