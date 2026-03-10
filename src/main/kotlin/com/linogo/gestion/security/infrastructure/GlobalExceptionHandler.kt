@@ -64,7 +64,7 @@ class GlobalExceptionHandler {
             timestamp = LocalDateTime.now(),
             status = HttpStatus.NOT_FOUND.value(),
             error = "Not Found",
-            message = ex.message
+            message = ex.message ?: "Recurso no encontrado"
         )
 
         logger.warn("Recurso no encontrado: ${ex.message}")
@@ -77,7 +77,7 @@ class GlobalExceptionHandler {
             timestamp = LocalDateTime.now(),
             status = HttpStatus.CONFLICT.value(),
             error = "Conflict",
-            message = ex.message
+            message = ex.message ?: "Recurso ya existe"
         )
 
         logger.warn("Recurso ya existe: ${ex.message}")
@@ -90,7 +90,7 @@ class GlobalExceptionHandler {
             timestamp = LocalDateTime.now(),
             status = HttpStatus.BAD_REQUEST.value(),
             error = "Bad Request",
-            message = ex.message
+            message = ex.message ?: "Error de validación"
         )
 
         logger.warn("Validación fallida: ${ex.message}")
@@ -103,7 +103,7 @@ class GlobalExceptionHandler {
             timestamp = LocalDateTime.now(),
             status = HttpStatus.BAD_REQUEST.value(),
             error = "Bad Request",
-            message = ex.message
+            message = ex.message ?: "Error de negocio"
         )
 
         logger.warn("Error de negocio: ${ex.message}")
