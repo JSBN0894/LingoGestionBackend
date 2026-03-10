@@ -11,12 +11,18 @@ WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
 
 # Spring profile activo (puede ser sobrescrito por variable de entorno en Railway)
-# Usa 'prod' por defecto para producción
 ENV SPRING_PROFILES_ACTIVE=prod
 
-# Script para convertir DATABASE_URL de Railway a SPRING_DATASOURCE_URL
-# Railway usa 'postgresql://' pero Spring necesita 'jdbc:postgresql://'
-RUN printf '#!/bin/sh\nif [ -n "$DATABASE_URL" ] && [ -z "$SPRING_DATASOURCE_URL" ]; then\n    export SPRING_DATASOURCE_URL="jdbc:${DATABASE_URL}"\nfi\nexec java -jar app.jar\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+# Script de entrada que convierte DATABASE_URL al formato JDBC
+# Usamos un enfoque que funciona en tiempo de ejecución
+RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
+    echo 'set -e' >> /app/entrypoint.sh && \
+    echo 'if [ -n "$DATABASE_URL" ] && [ -z "$SPRING_DATASOURCE_URL" ]; then' >> /app/entrypoint.sh && \
+    echo '    export SPRING_DATASOURCE_URL="jdbc:$DATABASE_URL"' >> /app/entrypoint.sh && \
+    echo '    echo "Database URL configurada: $SPRING_DATASOURCE_URL"' >> /app/entrypoint.sh && \
+    echo 'fi' >> /app/entrypoint.sh && \
+    echo 'exec java -jar app.jar' >> /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
 
 EXPOSE 8080
 ENTRYPOINT ["/app/entrypoint.sh"]
