@@ -103,13 +103,18 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration().apply {
-            // En producción, especificar orígenes permitidos explícitamente
-            allowedOrigins = listOf(
-                "https://tu-dominio.com",
-                "https://app.tu-dominio.com",
-                "android-app://com.linogo.app"
-            )
-            allowedOriginPatterns = listOf("*") // Solo para desarrollo
+            // Orígenes permitidos - configurar mediante variable de entorno en producción
+            val allowedOriginsEnv = System.getenv("CORS_ALLOWED_ORIGINS")
+                ?: "https://tu-dominio.com,https://app.tu-dominio.com,android-app://com.linogo.app"
+            
+            allowedOrigins = allowedOriginsEnv.split(",").map { it.trim() }
+            
+            // allowedOriginPatterns solo para desarrollo (no usar en producción)
+            val isDev = System.getenv("SPRING_PROFILES_ACTIVE") == "dev"
+            if (isDev) {
+                allowedOriginPatterns = listOf("*")
+            }
+            
             allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
             allowedHeaders = listOf(
                 "Authorization",

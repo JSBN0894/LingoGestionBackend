@@ -10,9 +10,9 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
 
-# NOTA: SPRING_PROFILES_ACTIVE ahora se define como variable de entorno 
-# en el Dashboard de Railway por cada ambiente (dev o prod)
-# Por defecto caerá a "default" si no se define.
+# Spring profile activo (puede ser sobrescrito por variable de entorno en Railway)
+# Usa 'prod' por defecto para producción
+ENV SPRING_PROFILES_ACTIVE=prod
 
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

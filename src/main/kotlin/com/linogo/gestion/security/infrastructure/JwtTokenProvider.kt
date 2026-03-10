@@ -25,6 +25,22 @@ class JwtTokenProvider(
 ) {
 
     private val logger = LoggerFactory.getLogger(JwtTokenProvider::class.java)
+    
+    init {
+        // Validar que el secreto JWT esté configurado y sea lo suficientemente seguro
+        if (jwtSecret.isBlank()) {
+            throw IllegalStateException("JWT_SECRET no está configurado. Debes establecer la variable de entorno JWT_SECRET con un valor seguro (mínimo 64 caracteres base64). Genera uno con: openssl rand -base64 64")
+        }
+        
+        // Validar longitud mínima del secreto (256 bits = 32 bytes = ~43 caracteres base64)
+        val decodedSecret = Decoders.BASE64.decode(jwtSecret)
+        if (decodedSecret.size < 32) {
+            throw IllegalStateException("El JWT_SECRET es demasiado corto. Debe tener al menos 256 bits (32 bytes). Genera uno seguro con: openssl rand -base64 64")
+        }
+        
+        logger.info("JWT configurado correctamente con secreto de ${decodedSecret.size * 8} bits")
+    }
+    
     private val signingKey: SecretKey by lazy { Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret)) as SecretKey }
 
     fun generateAccessToken(user: User): String {
