@@ -17,6 +17,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import java.time.LocalDateTime
 
 @WebMvcTest(com.linogo.gestion.client.infrastructure.ClientController::class)
+@org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc(addFilters = false)
+@org.springframework.test.context.ActiveProfiles("test")
 class ClientControllerIntegrationTest {
 
     @Autowired
@@ -24,6 +26,12 @@ class ClientControllerIntegrationTest {
 
     @MockBean
     private lateinit var clientService: ClientService
+
+    @MockBean
+    private lateinit var jwtAuthenticationFilter: com.linogo.gestion.security.infrastructure.JwtAuthenticationFilter
+
+    @MockBean
+    private lateinit var jwtTokenProvider: com.linogo.gestion.security.infrastructure.JwtTokenProvider
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
@@ -65,6 +73,8 @@ class ClientControllerIntegrationTest {
     fun `should return not found when client does not exist`() {
         // Given
         val clientId = "user_not_found"
+        org.mockito.Mockito.`when`(clientService.findById(clientId))
+            .thenThrow(NotFoundException("Client", clientId))
 
         // When & Then
         mockMvc.perform(get("/api/clients/{idUser}", clientId))
@@ -73,6 +83,7 @@ class ClientControllerIntegrationTest {
 
     @Test
     fun `should return all clients`() {
+        org.mockito.Mockito.`when`(clientService.findAll()).thenReturn(emptyList())
         // When & Then
         mockMvc.perform(get("/api/clients"))
             .andExpect(status().isOk)
@@ -87,6 +98,8 @@ class ClientControllerIntegrationTest {
             defaultCity = "Rosario",
             defaultAddress = "San Martín 567"
         )
+        org.mockito.Mockito.`when`(clientService.update(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any()))
+            .thenReturn(com.linogo.gestion.client.application.ClientResponse("user_123", request.name, request.defaultPhone, request.defaultCity, request.defaultAddress, LocalDateTime.now(), LocalDateTime.now()))
 
         // When & Then
         mockMvc.perform(put("/api/clients/{idUser}", "user_123")
@@ -98,15 +111,18 @@ class ClientControllerIntegrationTest {
     @Test
     fun `should return not found when updating non-existent client`() {
         // Given
+        val clientId = "user_not_found"
         val request = UpdateClientRequest(
             name = "Nombre Actualizado",
             defaultPhone = null,
             defaultCity = null,
             defaultAddress = null
         )
+        org.mockito.Mockito.`when`(clientService.update(org.mockito.ArgumentMatchers.eq(clientId), org.mockito.ArgumentMatchers.any()))
+            .thenThrow(NotFoundException("Client", clientId))
 
         // When & Then
-        mockMvc.perform(put("/api/clients/{idUser}", "user_not_found")
+        mockMvc.perform(put("/api/clients/{idUser}", clientId)
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isNotFound)
@@ -121,8 +137,13 @@ class ClientControllerIntegrationTest {
 
     @Test
     fun `should return not found when deleting non-existent client`() {
+        // Given
+        val clientId = "user_not_found"
+        org.mockito.Mockito.doThrow(NotFoundException("Client", clientId))
+            .`when`(clientService).delete(clientId)
+
         // When & Then
-        mockMvc.perform(delete("/api/clients/{idUser}", "user_not_found"))
+        mockMvc.perform(delete("/api/clients/{idUser}", clientId))
             .andExpect(status().isNotFound)
     }
 }
