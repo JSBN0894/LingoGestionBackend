@@ -3,6 +3,8 @@ package com.linogo.gestion.clientaddress.infrastructure
 import com.linogo.gestion.clientaddress.application.ClientAddressService
 import com.linogo.gestion.clientaddress.application.CreateClientAddressRequest
 import com.linogo.gestion.clientaddress.application.UpdateClientAddressRequest
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/client-addresses")
+@SecurityRequirement(name = "Bearer Authentication")
+@Tag(name = "Direcciones de Clientes", description = "Gestión de direcciones de clientes")
 class ClientAddressController(
     private val clientAddressService: ClientAddressService
 ) {

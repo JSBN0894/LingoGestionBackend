@@ -4,6 +4,8 @@ import com.linogo.gestion.client.application.ClientResponse
 import com.linogo.gestion.client.application.ClientService
 import com.linogo.gestion.client.application.CreateClientRequest
 import com.linogo.gestion.client.application.UpdateClientRequest
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/clients")
+@SecurityRequirement(name = "Bearer Authentication")
+@Tag(name = "Clientes", description = "Gestión de clientes del sistema")
 class ClientController(
     private val clientService: ClientService
 ) {

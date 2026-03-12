@@ -14,13 +14,13 @@ class User(
     val id: String? = null,
 
     @Column(unique = true, nullable = false, length = 50)
-    private val username: String, // Cambiado a private para evitar el getter automático de Kotlin
+    private val username: String,
 
     @Column(unique = true, nullable = false, length = 100)
     val email: String,
 
     @Column(nullable = false)
-    private val password: String, // Cambiado a private
+    private val password: String,
 
     @Column(nullable = false)
     val fullName: String,
@@ -30,7 +30,7 @@ class User(
     val role: Role = Role.USER,
 
     @Column(name = "is_enabled", nullable = false)
-    private val isEnabled: Boolean = true, // Cambiado a private
+    val enabled: Boolean = true,
 
     @Column(nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
@@ -39,12 +39,11 @@ class User(
     val updatedAt: LocalDateTime = LocalDateTime.now()
 ) : UserDetails {
 
-    // Implementación de UserDetails vinculada a las propiedades privadas
     override fun getUsername(): String = username
 
     override fun getPassword(): String = password
 
-    override fun isEnabled(): Boolean = isEnabled
+    override fun isEnabled(): Boolean = enabled
 
     override fun getAuthorities(): Collection<GrantedAuthority> =
         listOf(SimpleGrantedAuthority("ROLE_${role.name}"))
@@ -52,6 +51,10 @@ class User(
     override fun isAccountNonExpired(): Boolean = true
     override fun isAccountNonLocked(): Boolean = true
     override fun isCredentialsNonExpired(): Boolean = true
+
+    // Getters públicos para acceder a las propiedades privadas
+    fun username(): String = username
+    fun password(): String = password
 }
 
 enum class Role {

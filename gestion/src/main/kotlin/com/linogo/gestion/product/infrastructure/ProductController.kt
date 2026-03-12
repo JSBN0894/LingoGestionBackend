@@ -3,6 +3,8 @@ package com.linogo.gestion.product.infrastructure
 import com.linogo.gestion.product.application.ProductService
 import com.linogo.gestion.product.application.CreateProductRequest
 import com.linogo.gestion.product.application.UpdateProductRequest
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/products")
+@SecurityRequirement(name = "Bearer Authentication")
+@Tag(name = "Productos", description = "Gestión de productos")
 class ProductController(
     private val productService: ProductService
 ) {

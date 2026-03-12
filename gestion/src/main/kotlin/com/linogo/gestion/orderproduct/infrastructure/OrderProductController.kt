@@ -3,6 +3,8 @@ package com.linogo.gestion.orderproduct.infrastructure
 import com.linogo.gestion.orderproduct.application.CreateOrderProductRequest
 import com.linogo.gestion.orderproduct.application.OrderProductService
 import com.linogo.gestion.orderproduct.application.UpdateOrderProductRequest
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/order-products")
+@SecurityRequirement(name = "Bearer Authentication")
+@Tag(name = "Productos de Órdenes", description = "Gestión de productos en órdenes")
 class OrderProductController(
     private val orderProductService: OrderProductService
 ) {

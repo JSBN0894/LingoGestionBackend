@@ -12,6 +12,9 @@ data class Client(
     @Id
     val idUser: String,
 
+    @Column(unique = true, nullable = true)
+    val idNumber: String? = null,  // Número de identificación nacional (RUT, DNI, etc.)
+
     @Column(nullable = false)
     val name: String,
 

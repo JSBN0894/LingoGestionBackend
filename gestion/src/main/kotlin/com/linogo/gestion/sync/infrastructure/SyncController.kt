@@ -1,9 +1,6 @@
 package com.linogo.gestion.sync.infrastructure
 
-import com.linogo.gestion.sync.application.SyncService
-import com.linogo.gestion.sync.application.SyncValidateRequest
-import com.linogo.gestion.sync.application.SyncValidateResponse
-import com.linogo.gestion.sync.application.SyncVersionService
+import com.linogo.gestion.sync.application.*
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -35,12 +32,12 @@ class SyncController(
     }
 
     @GetMapping("/catalog")
-    fun getCatalog(): ResponseEntity<com.linogo.gestion.sync.application.SyncCatalogResponse> {
+    fun getCatalog(): ResponseEntity<SyncCatalogResponse> {
         return ResponseEntity.ok(syncService.getCatalog())
     }
 
     @GetMapping("/states")
-    fun getStates(): ResponseEntity<com.linogo.gestion.sync.application.SyncStatesResponse> {
+    fun getStates(): ResponseEntity<SyncStatesResponse> {
         return ResponseEntity.ok(syncService.getStates())
     }
 

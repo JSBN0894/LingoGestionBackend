@@ -4,16 +4,18 @@ import com.linogo.gestion.category.domain.Category
 import com.linogo.gestion.product.domain.Product
 import com.linogo.gestion.sync.domain.SyncVersion
 import com.linogo.gestion.sync.infrastructure.SyncVersionRepository
+import com.linogo.gestion.state.infrastructure.StateRepository
+import com.linogo.gestion.product.infrastructure.ProductRepository
+import com.linogo.gestion.category.infrastructure.CategoryRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class SyncService(
     private val syncVersionRepository: SyncVersionRepository,
-    private val productRepository: com.linogo.gestion.product.infrastructure.ProductRepository,
-    private val categoryRepository: com.linogo.gestion.category.infrastructure.CategoryRepository,
-    private val stateRepository: com.linogo.gestion.state.infrastructure.StateRepository,
-    private val shipmentStateRepository: com.linogo.gestion.shipmentstate.infrastructure.ShipmentStateRepository
+    private val productRepository: ProductRepository,
+    private val categoryRepository: CategoryRepository,
+    private val stateRepository: StateRepository
 ) {
 
     fun getCurrentVersion(): SyncVersion? {
@@ -37,12 +39,10 @@ class SyncService(
     fun getStates(): SyncStatesResponse {
         val version = getCurrentVersion()?.version ?: 0L
         val states = stateRepository.findAll()
-        val shipmentStates = shipmentStateRepository.findAll()
 
         return SyncStatesResponse(
             version = version,
-            states = states.map { StateSyncResponse(it.id, it.name, it.priority) },
-            shipmentStates = shipmentStates.map { ShipmentStateSyncResponse(it.id, it.name, it.state.priority) }
+            states = states.map { StateSyncResponse(it.id ?: 0, it.name, it.priority) }
         )
     }
 
@@ -68,7 +68,7 @@ class SyncService(
 
 private fun Product.toSyncResponse(): ProductSyncResponse {
     return ProductSyncResponse(
-        id = this.id,
+        id = this.id!!,
         name = this.name,
         pricePerUnit = this.pricePerUnit,
         stock = this.stock,
@@ -81,8 +81,53 @@ private fun Product.toSyncResponse(): ProductSyncResponse {
 
 private fun Category.toSyncResponse(): CategorySyncResponse {
     return CategorySyncResponse(
-        id = this.id,
+        id = this.id!!,
         name = this.name,
         parentId = this.parent?.id
     )
 }
+
+// DTOs para sincronización
+data class SyncCatalogResponse(
+    val version: Long,
+    val products: List<ProductSyncResponse>,
+    val categories: List<CategorySyncResponse>
+)
+
+data class ProductSyncResponse(
+    val id: Long,
+    val name: String,
+    val pricePerUnit: Long,
+    val stock: Int,
+    val imageUrl: String,
+    val description: String,
+    val categoryId: Long?,
+    val categoryName: String?
+)
+
+data class CategorySyncResponse(
+    val id: Long,
+    val name: String,
+    val parentId: Long?
+)
+
+data class SyncStatesResponse(
+    val version: Long,
+    val states: List<StateSyncResponse>
+)
+
+data class StateSyncResponse(
+    val id: Long,
+    val name: String,
+    val priority: Int
+)
+
+data class SyncValidateRequest(
+    val clientVersion: Long
+)
+
+data class SyncValidateResponse(
+    val needsSync: Boolean,
+    val currentVersion: Long,
+    val description: String
+)

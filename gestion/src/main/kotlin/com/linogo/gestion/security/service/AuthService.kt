@@ -55,12 +55,12 @@ class AuthService(
         val user = userRepository.findByUsername(request.username)
             ?: throw BadCredentialsException("Usuario no encontrado")
 
-        if (!user.isEnabled) {
+        if (!user.enabled) {
             throw BadCredentialsException("Usuario deshabilitado")
         }
 
         val accessToken = jwtTokenProvider.generateAccessToken(user)
-        val refreshToken = createRefreshToken(user)
+        val refreshToken = createRefreshToken(user.id!!)
 
         return AuthResponse(
             accessToken = accessToken,
@@ -82,24 +82,29 @@ class AuthService(
         }
 
         val user = User(
-            id = java.util.UUID.randomUUID().toString(),
+            id = null, // Dejar que JPA genere el ID
             username = request.username,
             email = request.email,
-            password = passwordEncoder.encode(request.password!!),
+            password = passwordEncoder.encode(request.password),
             fullName = request.fullName,
             role = Role.USER,
-            isEnabled = true
+            enabled = true
         )
 
-        val savedUser = userRepository.save(user)
-        val accessToken = jwtTokenProvider.generateAccessToken(savedUser)
-        val refreshToken = createRefreshToken(savedUser)
+        val savedUser = userRepository.saveAndFlush(user)
+        
+        // Obtener usuario fresco desde la BD para evitar problemas de detached
+        val freshUser = userRepository.findById(savedUser.id!!)
+            .orElseThrow { IllegalArgumentException("Usuario no encontrado") }
+
+        val accessToken = jwtTokenProvider.generateAccessToken(freshUser)
+        val refreshToken = createRefreshToken(freshUser.id!!)
 
         return AuthResponse(
             accessToken = accessToken,
             refreshToken = refreshToken,
             expiresIn = jwtTokenProvider.getAccessTokenExpirationMs() / 1000,
-            user = savedUser.toUserResponse()
+            user = freshUser.toUserResponse()
         )
     }
 
@@ -118,9 +123,11 @@ class AuthService(
             throw IllegalArgumentException("Refresh token expirado")
         }
 
-        val user = refreshTokenEntity.user
+        val userId = refreshTokenEntity.user.id!!
         refreshTokenRepository.delete(refreshTokenEntity)
-        val newRefreshToken = createRefreshToken(user)
+        val newRefreshToken = createRefreshToken(userId)
+        val user = userRepository.findById(userId)
+            .orElseThrow { IllegalArgumentException("Usuario no encontrado") }
         val newAccessToken = jwtTokenProvider.generateAccessToken(user)
 
         return AuthResponse(
@@ -136,14 +143,18 @@ class AuthService(
         revokeAllUserTokens(userId)
     }
 
-    private fun createRefreshToken(user: User): String {
-        refreshTokenRepository.findByUserId(user.id!!)?.let {
-            refreshTokenRepository.delete(it)
-        }
+    @Transactional
+    fun createRefreshToken(userId: String): String {
+        // Eliminar refresh token existente directamente por ID de usuario
+        refreshTokenRepository.deleteByUserId(userId)
+
+        // Obtener usuario fresco dentro de la transacción
+        val user = userRepository.findById(userId)
+            .orElseThrow { IllegalArgumentException("Usuario no encontrado: $userId") }
 
         val refreshToken = jwtTokenProvider.generateRefreshToken(user)
         val refreshTokenEntity = RefreshToken(
-            id = java.util.UUID.randomUUID().toString(),
+            id = null, // Dejar que JPA genere el ID
             user = user,
             token = refreshToken,
             expiryDate = Instant.now().plusMillis(jwtTokenProvider.getAccessTokenExpirationMs() * 7),
@@ -191,7 +202,7 @@ class AuthService(
 private fun User.toUserResponse(): UserResponse {
     return UserResponse(
         id = this.id ?: "",
-        username = this.username,
+        username = this.username(),
         email = this.email,
         fullName = this.fullName,
         role = this.role.name

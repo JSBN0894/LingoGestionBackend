@@ -5,11 +5,11 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 
 data class CreateOrderCompleteRequest(
-    @field:NotBlank(message = "Name is required")
-    val name: String,
+    @field:NotBlank(message = "Client name is required")
+    val clientName: String,
 
-    @field:NotBlank(message = "IdUser is required")
-    val idUser: String,
+    @field:NotBlank(message = "Client ID number is required (RUT, DNI, etc.)")
+    val clientIdNumber: String,  // Número de identificación nacional
 
     @field:NotBlank(message = "Address is required")
     val address: String,
@@ -27,9 +27,6 @@ data class CreateOrderCompleteRequest(
 data class OrderData(
     @field:NotNull(message = "Order price is required")
     val orderPrice: Long,
-
-    @field:NotBlank(message = "Operation state is required")
-    val operationState: String,
 
     @field:NotNull(message = "Order products are required")
     @field:Valid

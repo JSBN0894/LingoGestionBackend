@@ -3,7 +3,7 @@ package com.linogo.gestion.shipment.application
 import com.linogo.gestion.order.infrastructure.OrderRepository
 import com.linogo.gestion.shipment.domain.Shipment
 import com.linogo.gestion.shipment.infrastructure.ShipmentRepository
-import com.linogo.gestion.shipmentstate.infrastructure.ShipmentStateRepository
+import com.linogo.gestion.state.infrastructure.StateRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -12,16 +12,16 @@ import java.time.LocalDateTime
 class ShipmentService(
     private val shipmentRepository: ShipmentRepository,
     private val orderRepository: OrderRepository,
-    private val shipmentStateRepository: ShipmentStateRepository
+    private val stateRepository: StateRepository
 ) {
 
     @Transactional
     fun create(request: CreateShipmentRequest): ShipmentResponse {
         val order = orderRepository.findById(request.orderId)
-            .orElseThrow { IllegalArgumentException("Order with id ${request.orderId} not found") }
+            .orElseThrow { IllegalArgumentException("Pedido con id ${request.orderId} no encontrado") }
 
-        val shipmentState = shipmentStateRepository.findById(request.shippingStateId)
-            .orElseThrow { IllegalArgumentException("ShipmentState with id ${request.shippingStateId} not found") }
+        val shipmentState = stateRepository.findById(request.shippingStateId)
+            .orElseThrow { IllegalArgumentException("Estado con id ${request.shippingStateId} no encontrado") }
 
         val shipment = Shipment(
             order = order,
@@ -39,7 +39,7 @@ class ShipmentService(
     @Transactional(readOnly = true)
     fun findById(id: Long): ShipmentResponse {
         val shipment = shipmentRepository.findById(id)
-            .orElseThrow { IllegalArgumentException("Shipment with id $id not found") }
+            .orElseThrow { IllegalArgumentException("Envío con id $id no encontrado") }
         return shipment.toResponse()
     }
 
@@ -51,27 +51,28 @@ class ShipmentService(
     @Transactional
     fun update(id: Long, request: UpdateShipmentRequest): ShipmentResponse {
         val shipment = shipmentRepository.findById(id)
-            .orElseThrow { IllegalArgumentException("Shipment with id $id not found") }
+            .orElseThrow { IllegalArgumentException("Envío con id $id no encontrado") }
 
-        val shipmentState = shipmentStateRepository.findById(request.shippingStateId)
-            .orElseThrow { IllegalArgumentException("ShipmentState with id ${request.shippingStateId} not found") }
+        val shipmentState = stateRepository.findById(request.shippingStateId)
+            .orElseThrow { IllegalArgumentException("Estado con id ${request.shippingStateId} no encontrado") }
 
-        val updated = shipment.copy(
-            shippingState = shipmentState,
-            carrier = request.carrier,
-            isCashOnDelivery = request.isCashOnDelivery,
-            shippingCost = request.shippingCost,
-            estimateDeliveryDate = request.estimateDeliveryDate,
-            weight = request.weight
-        )
+        shipment.apply {
+            this.shippingState = shipmentState
+            this.carrier = request.carrier
+            this.isCashOnDelivery = request.isCashOnDelivery
+            this.shippingCost = request.shippingCost
+            this.estimateDeliveryDate = request.estimateDeliveryDate
+            this.weight = request.weight
+            this.updatedAt = LocalDateTime.now()
+        }
 
-        return shipmentRepository.save(updated).toResponse()
+        return shipmentRepository.save(shipment).toResponse()
     }
 
     @Transactional
     fun delete(id: Long) {
         if (!shipmentRepository.existsById(id)) {
-            throw IllegalArgumentException("Shipment with id $id not found")
+            throw IllegalArgumentException("Envío con id $id no encontrado")
         }
         shipmentRepository.deleteById(id)
     }
@@ -79,10 +80,10 @@ class ShipmentService(
     private fun Shipment.toResponse(): ShipmentResponse {
         return ShipmentResponse(
             id = this.id!!,
-            orderId = this.order.id!!,
+            orderId = this.order?.id ?: 0,
             carrier = this.carrier,
             isCashOnDelivery = this.isCashOnDelivery,
-            shippingStateId = this.shippingState.id,
+            shippingStateId = this.shippingState.id ?: 0,
             shippingStateName = this.shippingState.name,
             shippingCost = this.shippingCost,
             estimateDeliveryDate = this.estimateDeliveryDate,

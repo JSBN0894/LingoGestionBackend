@@ -22,7 +22,6 @@ class ProductService(
         }
 
         val product = Product(
-            id = request.id,
             name = request.name,
             pricePerUnit = request.pricePerUnit,
             stock = request.stock,
@@ -89,13 +88,13 @@ class ProductService(
 
     private fun Product.toResponse(): ProductResponse {
         return ProductResponse(
-            id = this.id,
+            id = this.id!!,
             name = this.name,
             pricePerUnit = this.pricePerUnit,
             stock = this.stock,
             imageUrl = this.imageUrl,
             description = this.description,
-            category = this.category?.let { CategoryResponse(it.id, it.name) },
+            category = this.category?.let { CategoryResponse(it.id!!, it.name) },
             createdAt = this.createdAt,
             updatedAt = this.updatedAt
         )

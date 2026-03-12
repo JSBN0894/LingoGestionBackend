@@ -3,6 +3,8 @@ package com.linogo.gestion.clientphone.infrastructure
 import com.linogo.gestion.clientphone.application.CreateClientPhoneRequest
 import com.linogo.gestion.clientphone.application.ClientPhoneService
 import com.linogo.gestion.clientphone.application.UpdateClientPhoneRequest
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/client-phones")
+@SecurityRequirement(name = "Bearer Authentication")
+@Tag(name = "Teléfonos de Clientes", description = "Gestión de teléfonos de clientes")
 class ClientPhoneController(
     private val clientPhoneService: ClientPhoneService
 ) {

@@ -55,18 +55,29 @@ class SecurityConfig(
             
             // Autorizaciones
             .authorizeHttpRequests { auth ->
-                // Endpoints públicos
+                // Endpoints públicos - login, sync y Swagger UI
                 auth.requestMatchers(
-                    "/api/auth/**",
+                    "/api/auth/login",
+                    "/api/sync/**",
+                    // Swagger UI debe ser público para poder autenticarse desde allí
                     "/swagger-ui/**",
+                    "/swagger-ui.html",
                     "/v3/api-docs/**",
+                    "/v3/api-docs.yaml",
                     "/swagger-resources/**",
-                    "/api/sync/**"
+                    "/webjars/**",
+                    "/api-docs/**"
                 ).permitAll()
-                
+
+                // Registro solo para ADMIN
+                auth.requestMatchers("/api/auth/register").hasRole("ADMIN")
+
+                // Refresh token requiere autenticación
+                auth.requestMatchers("/api/auth/refresh").authenticated()
+
                 // Requests OPTIONS para preflight CORS
                 auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                
+
                 // Todo lo demás requiere autenticación
                 auth.anyRequest().authenticated()
             }

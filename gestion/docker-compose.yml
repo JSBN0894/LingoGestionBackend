@@ -22,11 +22,20 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/gestion
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_SQL_INIT_MODE: always
+      # Perfil de desarrollo
+      - SPRING_PROFILES_ACTIVE=dev
+      # Base de datos - dentro de Docker el hostname es 'db'
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/gestion
+
+
+
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      # JPA
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_SQL_INIT_MODE=always
+      # JWT Secret (Base64 valido, minimo 256 bits)
+      - JWT_SECRET=VGhpc0lzQVN1cGVyU2VjdXJlSldUU2VjcmV0S2V5VGhhdElzQXRMZWFzdDI1NkJpdHNMb25nQW5kU2hvdWxkQmVDaGFuZ2VkSW5Qcm9kdWN0aW9u
     depends_on:
       db:
         condition: service_healthy

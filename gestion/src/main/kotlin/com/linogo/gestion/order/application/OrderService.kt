@@ -18,10 +18,10 @@ class OrderService(
     @Transactional
     fun create(request: CreateOrderRequest): OrderResponse {
         val client = clientRepository.findById(request.clientId)
-            .orElseThrow { IllegalArgumentException("Client with id ${request.clientId} not found") }
+            .orElseThrow { IllegalArgumentException("Cliente con id ${request.clientId} no encontrado") }
 
         val operationState = stateRepository.findById(request.operationStateId)
-            .orElseThrow { IllegalArgumentException("State with id ${request.operationStateId} not found") }
+            .orElseThrow { IllegalArgumentException("Estado con id ${request.operationStateId} no encontrado") }
 
         val order = Order(
             client = client,
@@ -38,7 +38,7 @@ class OrderService(
     @Transactional(readOnly = true)
     fun findById(id: Long): OrderResponse {
         val order = orderRepository.findById(id)
-            .orElseThrow { IllegalArgumentException("Order with id $id not found") }
+            .orElseThrow { IllegalArgumentException("Pedido con id $id no encontrado") }
         return order.toResponse()
     }
 
@@ -50,10 +50,10 @@ class OrderService(
     @Transactional
     fun update(id: Long, request: UpdateOrderRequest): OrderResponse {
         val order = orderRepository.findById(id)
-            .orElseThrow { IllegalArgumentException("Order with id $id not found") }
+            .orElseThrow { IllegalArgumentException("Pedido con id $id no encontrado") }
 
         val operationState = stateRepository.findById(request.operationStateId)
-            .orElseThrow { IllegalArgumentException("State with id ${request.operationStateId} not found") }
+            .orElseThrow { IllegalArgumentException("Estado con id ${request.operationStateId} no encontrado") }
 
         val updated = order.copy(
             operationState = operationState,
@@ -70,7 +70,7 @@ class OrderService(
     @Transactional
     fun delete(id: Long) {
         if (!orderRepository.existsById(id)) {
-            throw IllegalArgumentException("Order with id $id not found")
+            throw IllegalArgumentException("Pedido con id $id no encontrado")
         }
         orderRepository.deleteById(id)
     }
@@ -80,7 +80,7 @@ class OrderService(
             id = this.id!!,
             clientId = this.client.idUser,
             clientName = this.client.name,
-            operationStateId = this.operationState.id,
+            operationStateId = this.operationState.id!!,
             operationStateName = this.operationState.name,
             orderPrice = this.orderPrice,
             orderAddress = this.orderAddress,

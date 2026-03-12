@@ -8,7 +8,7 @@ import java.time.Instant
 data class RefreshToken(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    val id: String,
+    val id: String? = null,
 
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)

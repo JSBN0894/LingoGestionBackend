@@ -6,11 +6,14 @@ import com.linogo.gestion.security.application.RefreshTokenRequest
 import com.linogo.gestion.security.application.RegisterRequest
 import com.linogo.gestion.security.service.AuthService
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.*
@@ -35,9 +38,14 @@ class AuthController(
     }
 
     @PostMapping("/register")
-    @Operation(summary = "Registrar usuario", description = "Crea un nuevo usuario y devuelve tokens de acceso")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+        summary = "Registrar usuario (SOLO ADMIN)",
+        description = "Crea un nuevo usuario y devuelve tokens de acceso. **Requiere rol de ADMINISTRADOR**."
+    )
     @ApiResponse(responseCode = "200", description = "Registro exitoso")
     @ApiResponse(responseCode = "400", description = "Datos inválidos o usuario ya existe")
+    @ApiResponse(responseCode = "403", description = "No tiene permisos para registrar usuarios")
     fun register(@Valid @RequestBody request: RegisterRequest): ResponseEntity<AuthResponse> {
         return ResponseEntity.ok(authService.register(request))
     }
@@ -51,10 +59,15 @@ class AuthController(
     }
 
     @PostMapping("/logout")
-    @Operation(summary = "Cerrar sesión", description = "Invalida los tokens del usuario autenticado")
+    @Operation(
+        summary = "Cerrar sesión",
+        description = "Invalida los tokens del usuario autenticado",
+        security = [SecurityRequirement(name = "Bearer Authentication")]
+    )
     @ApiResponse(responseCode = "200", description = "Logout exitoso")
-    fun logout(@AuthenticationPrincipal userDetails: UserDetails): ResponseEntity<Map<String, String>> {
-        // En producción, obtener el userId del token o de la base de datos
+    fun logout(
+        @Parameter(hidden = true) @AuthenticationPrincipal userDetails: UserDetails
+    ): ResponseEntity<Map<String, String>> {
         authService.logout(userDetails.username)
         return ResponseEntity.ok(mapOf("message" to "Sesión cerrada exitosamente"))
     }

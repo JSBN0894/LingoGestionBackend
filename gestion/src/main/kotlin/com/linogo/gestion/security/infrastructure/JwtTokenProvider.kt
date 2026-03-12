@@ -40,7 +40,7 @@ class JwtTokenProvider(
         val expiryDate = Date(now.time + expirationMs)
 
         return Jwts.builder()
-            .setSubject(user.username)
+            .setSubject(user.getUsername())
             .claim("userId", (user as User).id)
             .claim("role", user.authorities.first().authority)
             .claim("type", tokenType.name)

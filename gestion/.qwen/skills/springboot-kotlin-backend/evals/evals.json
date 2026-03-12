@@ -1,0 +1,40 @@
+{
+  "skill_name": "springboot-kotlin-backend",
+  "evals": [
+    {
+      "id": 1,
+      "name": "crear-endpoint-crud-completo",
+      "prompt": "Necesito crear un endpoint REST completo para gestionar categorías de productos. Debe tener: crear, listar todas, obtener por ID, actualizar y eliminar. Cada categoría tiene nombre (obligatorio, único), descripción (opcional) y estado (activo/inactivo). Usa la arquitectura del proyecto actual.",
+      "expected_output": "Controller, Service, Repository, Entity, DTOs (CreateCategoryRequest, UpdateCategoryRequest, CategoryResponse) y Mapper para la entidad Category",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "implementar-autenticacion-jwt",
+      "prompt": "Implementa el flujo completo de autenticación JWT para la API: registro de usuario, login con generación de tokens, refresh token y logout. Los usuarios tienen username, email, password, fullName y role (USER/ADMIN). El password debe hashearse con BCrypt. Configura Spring Security para que valide los tokens JWT en cada request.",
+      "expected_output": "AuthController, AuthService, JwtTokenProvider, UserDetailsService, SecurityConfig, entidades User y RefreshToken, y todos los endpoints de autenticación",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "agregar-validacion-y-manejo-errores",
+      "prompt": "Agrega validación de inputs y manejo global de errores para el proyecto. Las validaciones deben usar Jakarta Validation (@NotBlank, @Email, @Size, etc.) y los errores deben retornar un formato JSON consistente con timestamp, status, error, message y details (para errores de validación). Incluye manejo para: ResourceNotFoundException, ValidationException, AuthenticationException, y errores genéricos.",
+      "expected_output": "GlobalExceptionHandler con @RestControllerAdvice, ErrorResponse DTO, ValidationError DTO, y anotaciones de validación en los DTOs de request",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "crear-tests-unitarios-servicio",
+      "prompt": "Crea tests unitarios completos para el ProductService del proyecto. El servicio tiene métodos: create, findById, findAll, update, delete. Incluye tests para: caso exitoso, recurso no encontrado, y violación de reglas de negocio (ej: nombre duplicado). Usa Mockito para mockear el repositorio.",
+      "expected_output": "Archivo ProductServiceImplTest.kt con tests usando @ExtendWith(MockitoExtension::class), mocks con @Mock, servicio con @InjectMocks, y aserciones con AssertJ o JUnit",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "configurar-pagination-y-filtrado",
+      "prompt": "Implementa pagination y filtrado avanzado para el endpoint de listación de órdenes. Las órdenes deben poder filtrarse por: clientId, status, date range (createdAt entre dos fechas), y total mayor/menor a un valor. La paginación debe soportar page, size, y sorting (campo y dirección). Retorna un PageResponse con metadata (totalElements, totalPages, currentPage, etc.).",
+      "expected_output": "Método findAll con Specification o QueryDSL, PageResponse DTO con metadata, y controller endpoint aceptando parámetros de pagination y filtros",
+      "files": []
+    }
+  ]
+}

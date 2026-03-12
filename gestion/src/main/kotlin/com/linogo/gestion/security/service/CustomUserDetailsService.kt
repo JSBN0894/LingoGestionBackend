@@ -17,7 +17,7 @@ class CustomUserDetailsService(
         val user = userRepository.findByUsername(username)
             ?: throw UsernameNotFoundException("Usuario no encontrado: $username")
 
-        if (!user.isEnabled) {
+        if (!user.enabled) {
             throw UsernameNotFoundException("Usuario deshabilitado: $username")
         }
 

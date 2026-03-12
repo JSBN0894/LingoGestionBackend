@@ -29,16 +29,30 @@ class CreateOrderCompleteService(
 
     @Transactional
     fun create(request: CreateOrderCompleteRequest): OrderCompleteResponse {
-        // 1. Buscar o crear cliente
-        val client = clientRepository.findById(request.idUser).orElseGet {
+        // 1. Buscar o crear cliente por número de identificación
+        var client = clientRepository.findByIdNumber(request.clientIdNumber)
+        
+        if (client == null) {
+            // Cliente nuevo: crear con idUser = clientIdNumber (UUID generado si es necesario)
             val newClient = Client(
-                idUser = request.idUser,
-                name = request.name,
+                idUser = java.util.UUID.randomUUID().toString(),
+                idNumber = request.clientIdNumber,
+                name = request.clientName,
                 defaultPhone = request.phone,
                 defaultCity = request.city,
                 defaultAddress = request.address
             )
-            clientRepository.save(newClient)
+            client = clientRepository.save(newClient)
+        } else {
+            // Cliente existente: actualizar datos si cambiaron
+            val updatedClient = client.copy(
+                name = request.clientName,
+                defaultPhone = request.phone,
+                defaultCity = request.city,
+                defaultAddress = request.address,
+                updatedAt = LocalDateTime.now()
+            )
+            client = clientRepository.save(updatedClient)
         }
 
         // 2. Agregar teléfono si no existe
@@ -62,9 +76,10 @@ class CreateOrderCompleteService(
             clientAddressRepository.save(clientAddress)
         }
 
-        // 4. Buscar estado de operación por nombre
-        val operationState = stateRepository.findAll().find { it.name.equals(request.order.operationState, ignoreCase = true) }
-            ?: throw IllegalArgumentException("State '${request.order.operationState}' not found")
+        // 4. Buscar estado de operación por nombre (usar "Pendiente" por defecto)
+        val operationState = stateRepository.findAll().find { it.name.equals("Pendiente", ignoreCase = true) }
+            ?: stateRepository.findAll().firstOrNull()
+            ?: throw IllegalArgumentException("No se encontraron estados de operación en la base de datos")
 
         // 5. Crear la orden
         val order = Order(
@@ -80,7 +95,7 @@ class CreateOrderCompleteService(
         // 6. Crear productos de la orden
         val orderProducts = request.order.orderProducts.map { productData ->
             val product = productRepository.findById(productData.idProduct)
-                .orElseThrow { IllegalArgumentException("Product with id ${productData.idProduct} not found") }
+                .orElseThrow { IllegalArgumentException("Producto con id ${productData.idProduct} no encontrado") }
 
             OrderProduct(
                 order = savedOrder,
@@ -99,7 +114,7 @@ class CreateOrderCompleteService(
             id = this.id!!,
             clientId = this.client.idUser,
             clientName = this.client.name,
-            operationStateId = this.operationState.id,
+            operationStateId = this.operationState.id!!,
             operationStateName = this.operationState.name,
             orderPrice = this.orderPrice,
             orderAddress = this.orderAddress,

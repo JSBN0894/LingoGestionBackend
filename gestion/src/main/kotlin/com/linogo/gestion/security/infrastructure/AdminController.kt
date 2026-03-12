@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/admin")
+@SecurityRequirement(name = "Bearer Authentication")
 @Tag(name = "Administración", description = "Endpoints exclusivos para administradores")
-@SecurityRequirement(name = "bearerAuth")
 class AdminController(
     private val securityChecks: SecurityChecks
 ) {
