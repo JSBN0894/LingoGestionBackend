@@ -18,6 +18,9 @@ data class State(
     @Column(nullable = false)
     val priority: Int,
 
+    @Column(nullable = false)
+    val type: String = "OPERATION",
+
     @Column(nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 

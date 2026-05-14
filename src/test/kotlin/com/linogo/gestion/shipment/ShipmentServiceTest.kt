@@ -10,6 +10,7 @@ import com.linogo.gestion.shipment.domain.Shipment
 import com.linogo.gestion.shipment.infrastructure.ShipmentRepository
 import com.linogo.gestion.shipmentstate.domain.ShipmentState
 import com.linogo.gestion.shipmentstate.infrastructure.ShipmentStateRepository
+import com.linogo.gestion.shipmenttracking.infrastructure.ShipmentTrackingRepository
 import com.linogo.gestion.state.domain.State
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -37,6 +38,9 @@ class ShipmentServiceTest {
 
     @Mock
     private lateinit var shipmentStateRepository: ShipmentStateRepository
+
+    @Mock
+    private lateinit var trackingRepository: ShipmentTrackingRepository
 
     @InjectMocks
     private lateinit var shipmentService: ShipmentService
@@ -77,6 +81,7 @@ class ShipmentServiceTest {
         `when`(orderRepository.findById(1L)).thenReturn(Optional.of(order))
         `when`(shipmentStateRepository.findById(1L)).thenReturn(Optional.of(shippingState))
         `when`(shipmentRepository.save(any())).thenReturn(shipment)
+        `when`(trackingRepository.save(any())).thenReturn(null)
 
         val response = shipmentService.create(createRequest)
 
@@ -167,6 +172,7 @@ class ShipmentServiceTest {
         `when`(shipmentRepository.findById(1L)).thenReturn(Optional.of(shipment))
         `when`(shipmentStateRepository.findById(2L)).thenReturn(Optional.of(updatedState))
         `when`(shipmentRepository.save(any())).thenReturn(updatedShipment)
+        `when`(trackingRepository.save(any())).thenReturn(null)
 
         val response = shipmentService.update(1L, updateRequest)
 

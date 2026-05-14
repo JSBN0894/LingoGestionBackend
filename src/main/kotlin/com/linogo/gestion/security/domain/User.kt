@@ -27,7 +27,7 @@ class User(
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    val role: Role = Role.USER,
+    var role: Role = Role.USER,
 
     @Column(name = "is_enabled", nullable = false)
     private val isEnabled: Boolean = true, // Cambiado a private
@@ -36,7 +36,7 @@ class User(
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(nullable = false)
-    val updatedAt: LocalDateTime = LocalDateTime.now()
+    var updatedAt: LocalDateTime = LocalDateTime.now()
 ) : UserDetails {
 
     // Implementación de UserDetails vinculada a las propiedades privadas
@@ -55,5 +55,5 @@ class User(
 }
 
 enum class Role {
-    USER, ADMIN, SELLER
+    USER, ADMIN, SELLER, VENTAS, PRODUCCION, LOGISTICA
 }

@@ -4,6 +4,8 @@ import com.linogo.gestion.order.infrastructure.OrderRepository
 import com.linogo.gestion.shipment.domain.Shipment
 import com.linogo.gestion.shipment.infrastructure.ShipmentRepository
 import com.linogo.gestion.shipmentstate.infrastructure.ShipmentStateRepository
+import com.linogo.gestion.shipmenttracking.domain.ShipmentTrackingHistory
+import com.linogo.gestion.shipmenttracking.infrastructure.ShipmentTrackingRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -12,7 +14,8 @@ import java.time.LocalDateTime
 class ShipmentService(
     private val shipmentRepository: ShipmentRepository,
     private val orderRepository: OrderRepository,
-    private val shipmentStateRepository: ShipmentStateRepository
+    private val shipmentStateRepository: ShipmentStateRepository,
+    private val trackingRepository: ShipmentTrackingRepository
 ) {
 
     @Transactional
@@ -30,10 +33,17 @@ class ShipmentService(
             isCashOnDelivery = request.isCashOnDelivery,
             shippingCost = request.shippingCost,
             estimateDeliveryDate = request.estimateDeliveryDate,
-            weight = request.weight
+            weight = request.weight,
+            guideNumber = request.guideNumber
         )
 
-        return shipmentRepository.save(shipment).toResponse()
+        val saved = shipmentRepository.save(shipment)
+        trackingRepository.save(ShipmentTrackingHistory(
+            shipmentId = saved.id!!,
+            statusTo = shipmentState.name,
+            notes = "Envío creado"
+        ))
+        return saved.toResponse()
     }
 
     @Transactional(readOnly = true)
@@ -53,6 +63,7 @@ class ShipmentService(
         val shipment = shipmentRepository.findById(id)
             .orElseThrow { IllegalArgumentException("Shipment with id $id not found") }
 
+        val oldStateName = shipment.shippingState.name
         val shipmentState = shipmentStateRepository.findById(request.shippingStateId)
             .orElseThrow { IllegalArgumentException("ShipmentState with id ${request.shippingStateId} not found") }
 
@@ -62,10 +73,20 @@ class ShipmentService(
             isCashOnDelivery = request.isCashOnDelivery,
             shippingCost = request.shippingCost,
             estimateDeliveryDate = request.estimateDeliveryDate,
-            weight = request.weight
+            weight = request.weight,
+            guideNumber = request.guideNumber ?: shipment.guideNumber
         )
 
-        return shipmentRepository.save(updated).toResponse()
+        val saved = shipmentRepository.save(updated)
+        if (oldStateName != shipmentState.name) {
+            trackingRepository.save(ShipmentTrackingHistory(
+                shipmentId = saved.id!!,
+                statusFrom = oldStateName,
+                statusTo = shipmentState.name,
+                notes = "Estado actualizado"
+            ))
+        }
+        return saved.toResponse()
     }
 
     @Transactional
@@ -74,6 +95,38 @@ class ShipmentService(
             throw IllegalArgumentException("Shipment with id $id not found")
         }
         shipmentRepository.deleteById(id)
+    }
+
+    @Transactional
+    fun assignGuide(id: Long, guideNumber: String): ShipmentResponse {
+        val shipment = shipmentRepository.findById(id)
+            .orElseThrow { IllegalArgumentException("Shipment with id $id not found") }
+
+        val updated = shipment.copy(guideNumber = guideNumber)
+        val saved = shipmentRepository.save(updated)
+        trackingRepository.save(ShipmentTrackingHistory(
+            shipmentId = saved.id!!,
+            statusTo = saved.shippingState.name,
+            changedBy = null,
+            notes = "Guía asociada: $guideNumber"
+        ))
+        return saved.toResponse()
+    }
+
+    @Transactional(readOnly = true)
+    fun getTrackingHistory(id: Long): List<TrackingEntryResponse> {
+        if (!shipmentRepository.existsById(id)) {
+            throw IllegalArgumentException("Shipment with id $id not found")
+        }
+        return trackingRepository.findByShipmentIdOrderByChangedAtAsc(id).map {
+            TrackingEntryResponse(
+                id = it.id!!,
+                statusFrom = it.statusFrom,
+                statusTo = it.statusTo,
+                notes = it.notes,
+                changedAt = it.changedAt
+            )
+        }
     }
 
     private fun Shipment.toResponse(): ShipmentResponse {
@@ -87,6 +140,7 @@ class ShipmentService(
             shippingCost = this.shippingCost,
             estimateDeliveryDate = this.estimateDeliveryDate,
             weight = this.weight,
+            guideNumber = this.guideNumber,
             createdAt = this.createdAt,
             updatedAt = this.updatedAt
         )
@@ -100,7 +154,8 @@ data class CreateShipmentRequest(
     val shippingStateId: Long,
     val shippingCost: Long? = null,
     val estimateDeliveryDate: LocalDateTime? = null,
-    val weight: Long? = null
+    val weight: Long? = null,
+    val guideNumber: String? = null
 )
 
 data class UpdateShipmentRequest(
@@ -109,7 +164,8 @@ data class UpdateShipmentRequest(
     val isCashOnDelivery: Boolean = true,
     val shippingCost: Long? = null,
     val estimateDeliveryDate: LocalDateTime? = null,
-    val weight: Long? = null
+    val weight: Long? = null,
+    val guideNumber: String? = null
 )
 
 data class ShipmentResponse(
@@ -122,6 +178,19 @@ data class ShipmentResponse(
     val shippingCost: Long?,
     val estimateDeliveryDate: LocalDateTime?,
     val weight: Long?,
+    val guideNumber: String?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
+)
+
+data class TrackingEntryResponse(
+    val id: Long,
+    val statusFrom: String?,
+    val statusTo: String,
+    val notes: String?,
+    val changedAt: LocalDateTime
+)
+
+data class AssignGuideRequest(
+    val guideNumber: String
 )

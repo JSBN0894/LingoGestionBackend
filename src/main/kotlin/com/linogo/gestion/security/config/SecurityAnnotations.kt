@@ -32,3 +32,18 @@ annotation class AuthenticatedUser
 @Retention(AnnotationRetention.RUNTIME)
 @PreAuthorize("isAuthenticated()")
 annotation class Authenticated
+
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+@PreAuthorize("hasAnyRole('ADMIN', 'VENTAS')")
+annotation class VentasOnly
+
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+@PreAuthorize("hasAnyRole('ADMIN', 'PRODUCCION')")
+annotation class ProduccionOnly
+
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+@PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICA')")
+annotation class LogisticaOnly

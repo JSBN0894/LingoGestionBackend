@@ -37,6 +37,9 @@ data class Shipment(
     @Column(nullable = true)
     val weight: Long? = null,
 
+    @Column(nullable = true)
+    val guideNumber: String? = null,
+
     @Column(nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 

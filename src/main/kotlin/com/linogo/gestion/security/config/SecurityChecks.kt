@@ -28,6 +28,18 @@ class SecurityChecks {
         return hasRole(Role.USER.name)
     }
 
+    fun isVentas(): Boolean {
+        return hasRole(Role.VENTAS.name)
+    }
+
+    fun isProduccion(): Boolean {
+        return hasRole(Role.PRODUCCION.name)
+    }
+
+    fun isLogistica(): Boolean {
+        return hasRole(Role.LOGISTICA.name)
+    }
+
     fun hasRole(role: String): Boolean {
         val authentication = SecurityContextHolder.getContext().authentication
         return authentication?.authorities?.any { it.authority == "ROLE_$role" } ?: false
