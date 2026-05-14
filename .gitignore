@@ -52,3 +52,13 @@ local.properties
 # OS
 .DS_Store
 Thumbs.db
+
+# Tool artifacts
+.gemini/
+*.skill
+
+# Uploaded files
+uploads/
+
+# Duplicate project (legacy)
+gestion/
