@@ -1,7 +1,7 @@
 package com.linogo.gestion.sync.application
 
 import com.linogo.gestion.category.domain.Category
-import com.linogo.gestion.product.domain.Product
+import com.linogo.gestion.product.infrastructure.persistence.entity.ProductEntity
 import com.linogo.gestion.sync.domain.SyncVersion
 import com.linogo.gestion.sync.infrastructure.SyncVersionRepository
 import org.springframework.stereotype.Service
@@ -66,7 +66,7 @@ class SyncService(
     }
 }
 
-private fun Product.toSyncResponse(): ProductSyncResponse {
+private fun ProductEntity.toSyncResponse(): ProductSyncResponse {
     return ProductSyncResponse(
         id = this.id,
         name = this.name,

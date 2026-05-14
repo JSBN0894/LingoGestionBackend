@@ -6,7 +6,7 @@ import com.linogo.gestion.client.application.CreateClientRequest
 import com.linogo.gestion.client.application.UpdateClientRequest
 import com.linogo.gestion.exception.NotFoundException
 import org.junit.jupiter.api.Test
-import org.mockito.ArgumentMatchers.anyString
+import org.mockito.kotlin.any
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -98,7 +98,7 @@ class ClientControllerIntegrationTest {
             defaultCity = "Rosario",
             defaultAddress = "San Martín 567"
         )
-        org.mockito.Mockito.`when`(clientService.update(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any()))
+        org.mockito.Mockito.`when`(clientService.update(any(), any()))
             .thenReturn(com.linogo.gestion.client.application.ClientResponse("user_123", request.name, request.defaultPhone, request.defaultCity, request.defaultAddress, LocalDateTime.now(), LocalDateTime.now()))
 
         // When & Then
@@ -118,7 +118,7 @@ class ClientControllerIntegrationTest {
             defaultCity = null,
             defaultAddress = null
         )
-        org.mockito.Mockito.`when`(clientService.update(org.mockito.ArgumentMatchers.eq(clientId), org.mockito.ArgumentMatchers.any()))
+        org.mockito.Mockito.`when`(clientService.update(org.mockito.kotlin.eq(clientId), any()))
             .thenThrow(NotFoundException("Client", clientId))
 
         // When & Then

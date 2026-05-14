@@ -2,7 +2,7 @@ package com.linogo.gestion.orderproduct.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.linogo.gestion.order.domain.Order
-import com.linogo.gestion.product.domain.Product
+import com.linogo.gestion.product.infrastructure.persistence.entity.ProductEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
@@ -29,7 +29,7 @@ data class OrderProduct(
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnore
     @JoinColumn(name = "product_id", foreignKey = ForeignKey(name = "fk_order_product_product"))
-    val product: Product,
+    val product: ProductEntity,
 
     @Column(nullable = false)
     val quantity: Int,

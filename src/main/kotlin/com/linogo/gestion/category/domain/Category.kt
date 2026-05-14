@@ -1,7 +1,7 @@
 package com.linogo.gestion.category.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.linogo.gestion.product.domain.Product
+import com.linogo.gestion.product.infrastructure.persistence.entity.ProductEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
@@ -25,7 +25,7 @@ data class Category(
 
     @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
     @JsonIgnore
-    val products: List<Product> = emptyList(),
+    val products: List<ProductEntity> = emptyList(),
 
     @Column(nullable = false)
     val name: String,
