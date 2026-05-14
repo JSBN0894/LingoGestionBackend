@@ -60,7 +60,8 @@ class SecurityConfig(
             .authorizeHttpRequests { auth ->
                 // Endpoints públicos
                 auth.requestMatchers(
-                    "/api/auth/**",
+                    "/api/auth/login",
+                    "/api/auth/refresh",
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/swagger-resources/**",
@@ -112,7 +113,7 @@ class SecurityConfig(
             // allowedOriginPatterns solo para desarrollo (no usar en producción)
             val isDev = System.getenv("SPRING_PROFILES_ACTIVE") == "dev"
             if (isDev) {
-                allowedOriginPatterns = listOf("*")
+                allowedOriginPatterns = listOf("http://localhost:*", "http://10.0.2.2:*", "http://127.0.0.1:*")
             }
             
             allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")

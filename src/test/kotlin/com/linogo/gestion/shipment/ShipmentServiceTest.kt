@@ -1,6 +1,5 @@
 package com.linogo.gestion.shipment
 
-import com.linogo.gestion.client.domain.Client
 import com.linogo.gestion.order.domain.Order
 import com.linogo.gestion.order.infrastructure.OrderRepository
 import com.linogo.gestion.shipment.application.CreateShipmentRequest
@@ -45,7 +44,6 @@ class ShipmentServiceTest {
     @InjectMocks
     private lateinit var shipmentService: ShipmentService
 
-    private lateinit var client: Client
     private lateinit var state: State
     private lateinit var order: Order
     private lateinit var shippingState: ShipmentState
@@ -55,9 +53,9 @@ class ShipmentServiceTest {
 
     @BeforeEach
     fun setUp() {
-        client = Client(idUser = "user_123", name = "Juan", createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
         state = State(id = 1L, name = "Pendiente", priority = 1, createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
-        order = Order(id = 1L, client = client, operationState = state, orderPrice = 50000L,
+        order = Order(id = 1L, customerId = 123456789L, customerName = "Juan",
+            operationState = state, orderPrice = 50000L,
             orderAddress = "Addr", orderPhone = "Phone", orderCity = "City",
             createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
         shippingState = ShipmentState(id = 1L, state = state, name = "En preparación",

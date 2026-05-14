@@ -1,8 +1,8 @@
 package com.linogo.gestion.customer.domain
 
 data class Customer(
-    val id: Long? = null,
+    val cedula: Long,
     val name: String,
-    val email: String,
-    val phones: List<String> = emptyList()
+    val phones: List<String> = emptyList(),
+    val addresses: List<String> = emptyList()
 )

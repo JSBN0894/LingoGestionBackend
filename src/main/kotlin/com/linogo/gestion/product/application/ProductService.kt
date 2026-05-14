@@ -2,7 +2,7 @@ package com.linogo.gestion.product.application
 
 import com.linogo.gestion.category.infrastructure.CategoryRepository
 import com.linogo.gestion.product.domain.Product
-import com.linogo.gestion.product.infrastructure.ProductRepository
+import com.linogo.gestion.product.domain.ProductRepository
 import com.linogo.gestion.sync.application.SyncVersionService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -39,13 +39,16 @@ class ProductService(
     @Transactional(readOnly = true)
     fun findById(id: Long): ProductResponse {
         val product = productRepository.findById(id)
-            .orElseThrow { IllegalArgumentException("Product with id $id not found") }
+            ?: throw IllegalArgumentException("Product with id $id not found")
         return product.toResponse()
     }
 
     @Transactional(readOnly = true)
-    fun findAll(): List<ProductResponse> {
-        return productRepository.findAll().map { it.toResponse() }
+    fun findAll(page: Int = 0, size: Int = 50): List<ProductResponse> {
+        return productRepository.findAll()
+            .drop(page * size)
+            .take(size)
+            .map { it.toResponse() }
     }
 
     @Transactional(readOnly = true)
@@ -56,7 +59,7 @@ class ProductService(
     @Transactional
     fun update(id: Long, request: UpdateProductRequest): ProductResponse {
         val product = productRepository.findById(id)
-            .orElseThrow { IllegalArgumentException("Product with id $id not found") }
+            ?: throw IllegalArgumentException("Product with id $id not found")
 
         val category = request.categoryId?.let { catId ->
             categoryRepository.findById(catId)
@@ -81,7 +84,7 @@ class ProductService(
     @Transactional
     fun delete(id: Long) {
         val product = productRepository.findById(id)
-            .orElseThrow { IllegalArgumentException("Product with id $id not found") }
+            ?: throw IllegalArgumentException("Product with id $id not found")
         val productName = product.name
         productRepository.deleteById(id)
         syncVersionService.incrementVersion("Producto eliminado: $productName")

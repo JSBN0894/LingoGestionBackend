@@ -1,6 +1,5 @@
 package com.linogo.gestion.order.domain
 
-import com.linogo.gestion.client.domain.Client
 import com.linogo.gestion.state.domain.State
 import jakarta.persistence.*
 import java.time.LocalDateTime
@@ -12,9 +11,11 @@ data class Order(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "client_id", foreignKey = ForeignKey(name = "fk_order_client"))
-    val client: Client,
+    @Column(nullable = false)
+    val customerId: Long,
+
+    @Column(nullable = false)
+    val customerName: String,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "operation_state_id", foreignKey = ForeignKey(name = "fk_order_operation_state"))
@@ -31,6 +32,9 @@ data class Order(
 
     @Column(nullable = false)
     val orderCity: String,
+
+    @Column(nullable = true)
+    val observation: String? = null,
 
     @Column(nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

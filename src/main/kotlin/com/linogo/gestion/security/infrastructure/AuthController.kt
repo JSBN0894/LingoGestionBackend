@@ -4,6 +4,7 @@ import com.linogo.gestion.security.application.AuthResponse
 import com.linogo.gestion.security.application.LoginRequest
 import com.linogo.gestion.security.application.RefreshTokenRequest
 import com.linogo.gestion.security.application.RegisterRequest
+import com.linogo.gestion.security.config.AdminOnly
 import com.linogo.gestion.security.service.AuthService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -35,11 +36,17 @@ class AuthController(
     }
 
     @PostMapping("/register")
-    @Operation(summary = "Registrar usuario", description = "Crea un nuevo usuario y devuelve tokens de acceso")
+    @AdminOnly
+    @Operation(summary = "Registrar usuario (solo ADMIN)", description = "Crea un nuevo usuario y devuelve tokens de acceso")
     @ApiResponse(responseCode = "200", description = "Registro exitoso")
     @ApiResponse(responseCode = "400", description = "Datos inválidos o usuario ya existe")
-    fun register(@Valid @RequestBody request: RegisterRequest): ResponseEntity<AuthResponse> {
-        return ResponseEntity.ok(authService.register(request))
+    @ApiResponse(responseCode = "403", description = "No tiene permisos de administrador")
+    fun register(
+        @Valid @RequestBody request: RegisterRequest,
+        httpRequest: HttpServletRequest
+    ): ResponseEntity<AuthResponse> {
+        val clientIp = getClientIp(httpRequest)
+        return ResponseEntity.ok(authService.register(request, clientIp))
     }
 
     @PostMapping("/refresh")

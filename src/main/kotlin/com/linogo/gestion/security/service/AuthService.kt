@@ -13,6 +13,7 @@ import com.linogo.gestion.security.infrastructure.JwtTokenProvider
 import com.linogo.gestion.security.infrastructure.RefreshTokenRepository
 import com.linogo.gestion.security.infrastructure.UserRepository
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -30,7 +31,9 @@ class AuthService(
     private val jwtTokenProvider: JwtTokenProvider,
     private val userRepository: UserRepository,
     private val refreshTokenRepository: RefreshTokenRepository,
-    private val userDetailsService: CustomUserDetailsService
+    private val userDetailsService: CustomUserDetailsService,
+    @param:Value("\${app.rate-limit.login-attempts}") private val maxAttempts: Int,
+    @param:Value("\${app.rate-limit.window-minutes}") private val windowMinutes: Long
 ) {
 
     private val logger = LoggerFactory.getLogger(AuthService::class.java)
@@ -73,7 +76,8 @@ class AuthService(
     // ... (El resto de tus métodos register, refreshToken, logout se mantienen igual)
 
     @Transactional
-    fun register(request: RegisterRequest): AuthResponse {
+    fun register(request: RegisterRequest, clientIp: String): AuthResponse {
+        checkRateLimit(clientIp)
         if (userDetailsService.existsByUsername(request.username)) {
             throw IllegalArgumentException("El username ya está en uso")
         }
@@ -146,7 +150,7 @@ class AuthService(
             id = java.util.UUID.randomUUID().toString(),
             user = user,
             token = refreshToken,
-            expiryDate = Instant.now().plusMillis(jwtTokenProvider.getAccessTokenExpirationMs() * 7),
+            expiryDate = Instant.now().plusMillis(jwtTokenProvider.getRefreshTokenExpirationMs()),
             isRevoked = false
         )
 
@@ -176,13 +180,12 @@ class AuthService(
     }
 
     private fun createBucket(): Bucket {
-        // En la 8.x se recomienda usar el Builder para mayor claridad
         val limit = Bandwidth.builder()
-            .capacity(5)
-            .refillGreedy(5, Duration.ofMinutes(1))
+            .capacity(maxAttempts.toLong())
+            .refillGreedy(maxAttempts.toLong(), Duration.ofMinutes(windowMinutes))
             .build()
 
-        return Bucket.builder() // Cambiado de Bucket4j.builder() a Bucket.builder()
+        return Bucket.builder()
             .addLimit(limit)
             .build()
     }

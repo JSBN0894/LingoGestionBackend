@@ -130,6 +130,8 @@ class JwtTokenProvider(
     }
 
     fun getAccessTokenExpirationMs(): Long = accessTokenExpiration
+
+    fun getRefreshTokenExpirationMs(): Long = refreshTokenExpiration
 }
 
 enum class TokenType {

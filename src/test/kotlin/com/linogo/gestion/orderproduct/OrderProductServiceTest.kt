@@ -1,7 +1,6 @@
 package com.linogo.gestion.orderproduct
 
 import com.linogo.gestion.category.domain.Category
-import com.linogo.gestion.client.domain.Client
 import com.linogo.gestion.order.domain.Order
 import com.linogo.gestion.order.infrastructure.OrderRepository
 import com.linogo.gestion.orderproduct.application.CreateOrderProductRequest
@@ -43,7 +42,6 @@ class OrderProductServiceTest {
     @InjectMocks
     private lateinit var orderProductService: OrderProductService
 
-    private lateinit var client: Client
     private lateinit var state: State
     private lateinit var order: Order
     private lateinit var category: Category
@@ -54,9 +52,9 @@ class OrderProductServiceTest {
 
     @BeforeEach
     fun setUp() {
-        client = Client(idUser = "user_123", name = "Juan", createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
         state = State(id = 1L, name = "Pendiente", priority = 1, createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
-        order = Order(id = 1L, client = client, operationState = state, orderPrice = 50000L,
+        order = Order(id = 1L, customerId = 123456789L, customerName = "Juan",
+            operationState = state, orderPrice = 50000L,
             orderAddress = "Addr", orderPhone = "Phone", orderCity = "City",
             createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
         category = Category(id = 1L, name = "Moldes")

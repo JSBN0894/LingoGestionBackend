@@ -50,7 +50,6 @@ class AuthServiceTest {
     @Mock
     private lateinit var userDetailsService: CustomUserDetailsService
 
-    @InjectMocks
     private lateinit var authService: AuthService
 
     private lateinit var user: User
@@ -60,6 +59,16 @@ class AuthServiceTest {
 
     @BeforeEach
     fun setUp() {
+        authService = AuthService(
+            authenticationManager = authenticationManager,
+            passwordEncoder = passwordEncoder,
+            jwtTokenProvider = jwtTokenProvider,
+            userRepository = userRepository,
+            refreshTokenRepository = refreshTokenRepository,
+            userDetailsService = userDetailsService,
+            maxAttempts = 5,
+            windowMinutes = 1L
+        )
         user = User(
             id = "user_id_123",
             username = "testuser",
@@ -144,7 +153,7 @@ class AuthServiceTest {
         `when`(jwtTokenProvider.generateRefreshToken(any())).thenReturn("refresh_token")
         `when`(jwtTokenProvider.getAccessTokenExpirationMs()).thenReturn(900000L)
 
-        val response = authService.register(registerRequest)
+        val response = authService.register(registerRequest, "127.0.0.1")
 
         assertNotNull(response)
         assertEquals("access_token", response.accessToken)
@@ -157,7 +166,7 @@ class AuthServiceTest {
         `when`(userDetailsService.existsByUsername("newuser")).thenReturn(true)
 
         val exception = assertThrows(IllegalArgumentException::class.java) {
-            authService.register(registerRequest)
+            authService.register(registerRequest, "127.0.0.1")
         }
 
         assertEquals("El username ya está en uso", exception.message)
@@ -169,7 +178,7 @@ class AuthServiceTest {
         `when`(userDetailsService.existsByEmail("new@example.com")).thenReturn(true)
 
         val exception = assertThrows(IllegalArgumentException::class.java) {
-            authService.register(registerRequest)
+            authService.register(registerRequest, "127.0.0.1")
         }
 
         assertEquals("El email ya está registrado", exception.message)

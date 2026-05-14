@@ -28,13 +28,12 @@ ON CONFLICT (id) DO NOTHING;
 -- ===========================================
 INSERT INTO states (id, name, type, priority, created_at, updated_at)
 VALUES
-    (1, 'Pendiente', 'OPERATION', 1, NOW(), NOW()),
-    (2, 'Procesado', 'OPERATION', 2, NOW(), NOW()),
-    (3, 'Guía asociada', 'OPERATION', 3, NOW(), NOW()),
-    (4, 'En tránsito', 'OPERATION', 4, NOW(), NOW()),
-    (5, 'En oficina', 'OPERATION', 5, NOW(), NOW()),
-    (6, 'Entregado', 'OPERATION', 6, NOW(), NOW()),
-    (7, 'Novedad', 'OPERATION', 7, NOW(), NOW())
+    (1, 'PENDIENTE', 'OPERATION', 1, NOW(), NOW()),
+    (2, 'EN PROCESO', 'OPERATION', 2, NOW(), NOW()),
+    (3, 'ENVIADO', 'OPERATION', 3, NOW(), NOW()),
+    (4, 'DISPONIBLE', 'OPERATION', 4, NOW(), NOW()),
+    (5, 'FINALIZADO', 'OPERATION', 5, NOW(), NOW()),
+    (6, 'NOVEDAD', 'OPERATION', 6, NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- ===========================================
@@ -43,10 +42,10 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO shipment_states (id, name, state_id, created_at, updated_at)
 VALUES
     (1, 'Pendiente', 1, NOW(), NOW()),
-    (2, 'En tránsito', 4, NOW(), NOW()),
-    (3, 'En oficina', 5, NOW(), NOW()),
-    (4, 'Entregado', 6, NOW(), NOW()),
-    (5, 'Novedad', 7, NOW(), NOW())
+    (2, 'En tránsito', 3, NOW(), NOW()),
+    (3, 'En oficina', 4, NOW(), NOW()),
+    (4, 'Entregado', 5, NOW(), NOW()),
+    (5, 'Novedad', 6, NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- ===========================================

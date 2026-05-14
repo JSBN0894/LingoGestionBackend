@@ -14,8 +14,8 @@ class CustomerService(private val customerRepository: CustomerRepository) {
     }
 
     @Transactional(readOnly = true)
-    fun getCustomer(id: Long): Customer? {
-        return customerRepository.findById(id)
+    fun getCustomer(cedula: Long): Customer? {
+        return customerRepository.findByCedula(cedula)
     }
 
     @Transactional(readOnly = true)
@@ -24,7 +24,15 @@ class CustomerService(private val customerRepository: CustomerRepository) {
     }
 
     @Transactional
-    fun deleteCustomer(id: Long) {
-        customerRepository.deleteById(id)
+    fun updateCustomer(cedula: Long, customer: Customer): Customer {
+        if (!customerRepository.existsByCedula(cedula)) {
+            throw IllegalArgumentException("Customer with cedula $cedula not found")
+        }
+        return customerRepository.save(customer.copy(cedula = cedula))
+    }
+
+    @Transactional
+    fun deleteCustomer(cedula: Long) {
+        customerRepository.deleteByCedula(cedula)
     }
 }

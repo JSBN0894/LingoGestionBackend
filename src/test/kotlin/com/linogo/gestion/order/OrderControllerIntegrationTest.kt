@@ -40,7 +40,7 @@ class OrderControllerIntegrationTest {
     @Test
     fun `should create order when request is valid`() {
         val request = CreateOrderRequest(
-            clientId = "user_123",
+            customerId = 123456789L,
             operationStateId = 1L,
             orderPrice = 50000L,
             orderAddress = "Av. Corrientes 1234",

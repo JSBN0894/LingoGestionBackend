@@ -48,9 +48,9 @@ class AuthControllerIntegrationTest {
     @BeforeEach
     fun setUp() {
         val auth = UsernamePasswordAuthenticationToken(
-            User("testuser", "password", listOf(SimpleGrantedAuthority("ROLE_USER"))),
+            User("admin", "password", listOf(SimpleGrantedAuthority("ROLE_ADMIN"))),
             null,
-            listOf(SimpleGrantedAuthority("ROLE_USER"))
+            listOf(SimpleGrantedAuthority("ROLE_ADMIN"))
         )
         SecurityContextHolder.getContext().authentication = auth
     }
@@ -100,7 +100,7 @@ class AuthControllerIntegrationTest {
             user = UserResponse(id = "user_1", username = "newuser", email = "new@example.com",
                 fullName = "New User", role = "USER")
         )
-        org.mockito.Mockito.`when`(authService.register(org.mockito.kotlin.any()))
+        org.mockito.Mockito.`when`(authService.register(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
             .thenReturn(response)
 
         mockMvc.perform(post("/api/auth/register")

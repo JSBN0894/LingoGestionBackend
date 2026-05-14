@@ -15,29 +15,37 @@ class CustomerPersistenceAdapter(
         return savedEntity.toDomain()
     }
 
-    override fun findById(id: Long): Customer? {
-        return jpaCustomerRepository.findById(id).map { it.toDomain() }.orElse(null)
+    override fun saveAll(customers: List<Customer>): List<Customer> {
+        return jpaCustomerRepository.saveAll(customers.map { it.toEntity() }).map { it.toDomain() }
+    }
+
+    override fun findByCedula(cedula: Long): Customer? {
+        return jpaCustomerRepository.findById(cedula).map { it.toDomain() }.orElse(null)
     }
 
     override fun findAll(): List<Customer> {
         return jpaCustomerRepository.findAll().map { it.toDomain() }
     }
 
-    override fun deleteById(id: Long) {
-        jpaCustomerRepository.deleteById(id)
+    override fun deleteByCedula(cedula: Long) {
+        jpaCustomerRepository.deleteById(cedula)
+    }
+
+    override fun existsByCedula(cedula: Long): Boolean {
+        return jpaCustomerRepository.existsById(cedula)
     }
 
     private fun Customer.toEntity() = CustomerEntity(
-        id = id,
+        cedula = cedula,
         name = name,
-        email = email,
-        phones = phones
+        phones = phones,
+        addresses = addresses
     )
 
     private fun CustomerEntity.toDomain() = Customer(
-        id = id,
+        cedula = cedula,
         name = name,
-        email = email,
-        phones = phones
+        phones = phones,
+        addresses = addresses
     )
 }

@@ -12,7 +12,10 @@ import jakarta.validation.Valid
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
+import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDateTime
@@ -26,6 +29,7 @@ class AdminController(
     private val passwordEncoder: PasswordEncoder,
     private val userDetailsService: CustomUserDetailsService
 ) {
+    private val log = LoggerFactory.getLogger(AdminController::class.java)
 
     @GetMapping("/users")
     @AdminOnly
@@ -67,6 +71,7 @@ class AdminController(
         )
 
         val saved = userRepository.save(user)
+        log.info("ADMIN creó usuario: ${saved.username} con rol ${saved.role}")
         return ResponseEntity.ok(saved.toUserResponse())
     }
 
@@ -80,21 +85,32 @@ class AdminController(
         val user = userRepository.findById(id)
             .orElseThrow { IllegalArgumentException("User with id $id not found") }
 
+        val previousRole = user.role
         user.role = request.role
         user.updatedAt = LocalDateTime.now()
         val saved = userRepository.save(user)
+        log.info("ADMIN cambió rol de ${saved.username}: $previousRole → ${saved.role}")
         return ResponseEntity.ok(saved.toUserResponse())
     }
 
     @DeleteMapping("/users/{userId}")
     @AdminOnly
     @Operation(summary = "Eliminar usuario")
-    fun deleteUser(@PathVariable userId: String): ResponseEntity<Map<String, String>> {
+    fun deleteUser(
+        @PathVariable userId: String,
+        @AuthenticationPrincipal currentUser: UserDetails
+    ): ResponseEntity<Map<String, String>> {
         if (!userRepository.existsById(userId)) {
             throw IllegalArgumentException("User with id $userId not found")
         }
+        val target = userRepository.findById(userId).get()
+        if (currentUser.username == target.username) {
+            throw IllegalArgumentException("No puedes eliminarte a ti mismo")
+        }
+        val deletedUsername = target.username
         userRepository.deleteById(userId)
-        return ResponseEntity.ok(mapOf("message" to "Usuario $userId eliminado"))
+        log.warn("ADMIN eliminó usuario: $deletedUsername (id: $userId)")
+        return ResponseEntity.ok(mapOf("message" to "Usuario $deletedUsername eliminado"))
     }
 
     private fun User.toUserResponse(): UserResponse {

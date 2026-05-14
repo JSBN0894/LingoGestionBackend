@@ -1,6 +1,6 @@
 package com.linogo.gestion.order.application
 
-import com.linogo.gestion.client.infrastructure.ClientRepository
+import com.linogo.gestion.customer.domain.CustomerRepository
 import com.linogo.gestion.order.domain.Order
 import com.linogo.gestion.order.infrastructure.OrderRepository
 import com.linogo.gestion.state.infrastructure.StateRepository
@@ -11,20 +11,21 @@ import java.time.LocalDateTime
 @Service
 class OrderService(
     private val orderRepository: OrderRepository,
-    private val clientRepository: ClientRepository,
+    private val customerRepository: CustomerRepository,
     private val stateRepository: StateRepository
 ) {
 
     @Transactional
     fun create(request: CreateOrderRequest): OrderResponse {
-        val client = clientRepository.findById(request.clientId)
-            .orElseThrow { IllegalArgumentException("Client with id ${request.clientId} not found") }
+        val customer = customerRepository.findByCedula(request.customerId)
+            ?: throw IllegalArgumentException("Customer with cedula ${request.customerId} not found")
 
         val operationState = stateRepository.findById(request.operationStateId)
             .orElseThrow { IllegalArgumentException("State with id ${request.operationStateId} not found") }
 
         val order = Order(
-            client = client,
+            customerId = customer.cedula,
+            customerName = customer.name,
             operationState = operationState,
             orderPrice = request.orderPrice,
             orderAddress = request.orderAddress,
@@ -43,8 +44,11 @@ class OrderService(
     }
 
     @Transactional(readOnly = true)
-    fun findAll(): List<OrderResponse> {
-        return orderRepository.findAll().map { it.toResponse() }
+    fun findAll(page: Int = 0, size: Int = 50): List<OrderResponse> {
+        return orderRepository.findAll()
+            .drop(page * size)
+            .take(size)
+            .map { it.toResponse() }
     }
 
     @Transactional
@@ -61,6 +65,7 @@ class OrderService(
             orderAddress = request.orderAddress,
             orderPhone = request.orderPhone,
             orderCity = request.orderCity,
+            observation = request.observation ?: order.observation,
             updatedAt = LocalDateTime.now()
         )
 
@@ -78,14 +83,15 @@ class OrderService(
     private fun Order.toResponse(): OrderResponse {
         return OrderResponse(
             id = this.id!!,
-            clientId = this.client.idUser,
-            clientName = this.client.name,
+            customerId = this.customerId,
+            customerName = this.customerName,
             operationStateId = this.operationState.id,
             operationStateName = this.operationState.name,
             orderPrice = this.orderPrice,
             orderAddress = this.orderAddress,
             orderPhone = this.orderPhone,
             orderCity = this.orderCity,
+            observation = this.observation,
             createdAt = this.createdAt,
             updatedAt = this.updatedAt
         )
@@ -93,7 +99,7 @@ class OrderService(
 }
 
 data class CreateOrderRequest(
-    val clientId: String,
+    val customerId: Long,
     val operationStateId: Long,
     val orderPrice: Long,
     val orderAddress: String,
@@ -106,19 +112,21 @@ data class UpdateOrderRequest(
     val orderPrice: Long,
     val orderAddress: String,
     val orderPhone: String,
-    val orderCity: String
+    val orderCity: String,
+    val observation: String? = null
 )
 
 data class OrderResponse(
     val id: Long,
-    val clientId: String,
-    val clientName: String,
+    val customerId: Long,
+    val customerName: String,
     val operationStateId: Long,
     val operationStateName: String,
     val orderPrice: Long,
     val orderAddress: String,
     val orderPhone: String,
     val orderCity: String,
+    val observation: String?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
 )

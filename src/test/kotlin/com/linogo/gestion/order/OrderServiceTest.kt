@@ -1,7 +1,7 @@
 package com.linogo.gestion.order
 
-import com.linogo.gestion.client.domain.Client
-import com.linogo.gestion.client.infrastructure.ClientRepository
+import com.linogo.gestion.customer.domain.Customer
+import com.linogo.gestion.customer.domain.CustomerRepository
 import com.linogo.gestion.order.application.CreateOrderRequest
 import com.linogo.gestion.order.application.OrderService
 import com.linogo.gestion.order.application.UpdateOrderRequest
@@ -30,7 +30,7 @@ class OrderServiceTest {
     private lateinit var orderRepository: OrderRepository
 
     @Mock
-    private lateinit var clientRepository: ClientRepository
+    private lateinit var customerRepository: CustomerRepository
 
     @Mock
     private lateinit var stateRepository: StateRepository
@@ -38,7 +38,7 @@ class OrderServiceTest {
     @InjectMocks
     private lateinit var orderService: OrderService
 
-    private lateinit var client: Client
+    private lateinit var customer: Customer
     private lateinit var state: State
     private lateinit var existingOrder: Order
     private lateinit var createRequest: CreateOrderRequest
@@ -46,14 +46,11 @@ class OrderServiceTest {
 
     @BeforeEach
     fun setUp() {
-        client = Client(
-            idUser = "user_123",
+        customer = Customer(
+            cedula = 123456789L,
             name = "Juan Pérez",
-            defaultPhone = "+54911223344",
-            defaultCity = "Buenos Aires",
-            defaultAddress = "Av. Corrientes 1234",
-            createdAt = LocalDateTime.now().minusDays(1),
-            updatedAt = LocalDateTime.now()
+            phones = listOf("+54911223344"),
+            addresses = listOf("Av. Corrientes 1234, Buenos Aires")
         )
 
         state = State(
@@ -66,7 +63,8 @@ class OrderServiceTest {
 
         existingOrder = Order(
             id = 1L,
-            client = client,
+            customerId = 123456789L,
+            customerName = "Juan Pérez",
             operationState = state,
             orderPrice = 50000L,
             orderAddress = "Av. Corrientes 1234",
@@ -77,7 +75,7 @@ class OrderServiceTest {
         )
 
         createRequest = CreateOrderRequest(
-            clientId = "user_123",
+            customerId = 123456789L,
             operationStateId = 1L,
             orderPrice = 50000L,
             orderAddress = "Av. Corrientes 1234",
@@ -97,36 +95,36 @@ class OrderServiceTest {
     @Test
     fun `create should save order when data is valid`() {
         val savedOrder = existingOrder.copy(id = 2L)
-        `when`(clientRepository.findById("user_123")).thenReturn(Optional.of(client))
+        `when`(customerRepository.findByCedula(123456789L)).thenReturn(customer)
         `when`(stateRepository.findById(1L)).thenReturn(Optional.of(state))
         `when`(orderRepository.save(org.mockito.ArgumentMatchers.any())).thenReturn(savedOrder)
 
         val response = orderService.create(createRequest)
 
         assertNotNull(response)
-        assertEquals("user_123", response.clientId)
+        assertEquals(123456789L, response.customerId)
         assertEquals(1L, response.operationStateId)
         assertEquals(50000L, response.orderPrice)
-        verify(clientRepository).findById("user_123")
+        verify(customerRepository).findByCedula(123456789L)
         verify(stateRepository).findById(1L)
         verify(orderRepository).save(org.mockito.ArgumentMatchers.any())
     }
 
     @Test
-    fun `create should throw IllegalArgumentException when client not found`() {
-        `when`(clientRepository.findById("user_not_found")).thenReturn(Optional.empty())
+    fun `create should throw IllegalArgumentException when customer not found`() {
+        `when`(customerRepository.findByCedula(999L)).thenReturn(null)
 
-        val request = createRequest.copy(clientId = "user_not_found")
+        val request = createRequest.copy(customerId = 999L)
         val exception = assertThrows(IllegalArgumentException::class.java) {
             orderService.create(request)
         }
 
-        assertEquals("Client with id user_not_found not found", exception.message)
+        assertEquals("Customer with cedula 999 not found", exception.message)
     }
 
     @Test
     fun `create should throw IllegalArgumentException when state not found`() {
-        `when`(clientRepository.findById("user_123")).thenReturn(Optional.of(client))
+        `when`(customerRepository.findByCedula(123456789L)).thenReturn(customer)
         `when`(stateRepository.findById(999L)).thenReturn(Optional.empty())
 
         val request = createRequest.copy(operationStateId = 999L)
@@ -145,7 +143,7 @@ class OrderServiceTest {
 
         assertNotNull(response)
         assertEquals(1L, response.id)
-        assertEquals("Juan Pérez", response.clientName)
+        assertEquals("Juan Pérez", response.customerName)
         verify(orderRepository).findById(1L)
     }
 

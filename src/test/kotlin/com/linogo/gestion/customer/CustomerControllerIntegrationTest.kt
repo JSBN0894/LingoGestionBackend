@@ -6,6 +6,7 @@ import com.linogo.gestion.customer.domain.Customer
 import com.linogo.gestion.security.infrastructure.JwtAuthenticationFilter
 import com.linogo.gestion.security.infrastructure.JwtTokenProvider
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -36,7 +37,7 @@ class CustomerControllerIntegrationTest {
 
     @Test
     fun `should create customer when request is valid`() {
-        val request = Customer(name = "Juan Pérez", email = "juan@example.com")
+        val request = Customer(cedula = 123456789L, name = "Juan Pérez")
 
         mockMvc.perform(post("/api/customers")
             .contentType(MediaType.APPLICATION_JSON)
@@ -46,16 +47,16 @@ class CustomerControllerIntegrationTest {
 
     @Test
     fun `should return customer when exists`() {
-        org.mockito.Mockito.`when`(customerService.getCustomer(1L))
-            .thenReturn(Customer(id = 1L, name = "Juan", email = "juan@example.com"))
+        `when`(customerService.getCustomer(123456789L))
+            .thenReturn(Customer(cedula = 123456789L, name = "Juan"))
 
-        mockMvc.perform(get("/api/customers/1"))
+        mockMvc.perform(get("/api/customers/123456789"))
             .andExpect(status().isOk)
     }
 
     @Test
     fun `should return null when customer not found`() {
-        org.mockito.Mockito.`when`(customerService.getCustomer(999L)).thenReturn(null)
+        `when`(customerService.getCustomer(999L)).thenReturn(null)
 
         mockMvc.perform(get("/api/customers/999"))
             .andExpect(status().isOk)
@@ -63,7 +64,7 @@ class CustomerControllerIntegrationTest {
 
     @Test
     fun `should return all customers`() {
-        org.mockito.Mockito.`when`(customerService.getAllCustomers()).thenReturn(emptyList())
+        `when`(customerService.getAllCustomers()).thenReturn(emptyList())
 
         mockMvc.perform(get("/api/customers"))
             .andExpect(status().isOk)
@@ -71,7 +72,7 @@ class CustomerControllerIntegrationTest {
 
     @Test
     fun `should delete customer when exists`() {
-        mockMvc.perform(delete("/api/customers/1"))
+        mockMvc.perform(delete("/api/customers/123456789"))
             .andExpect(status().isNoContent)
     }
 }

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -34,8 +35,11 @@ class ProductController(
     }
 
     @GetMapping
-    fun getAll(): ResponseEntity<Any> {
-        val responses = productService.findAll()
+    fun getAll(
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "50") size: Int
+    ): ResponseEntity<Any> {
+        val responses = productService.findAll(page, size)
         return ResponseEntity.ok(responses)
     }
 

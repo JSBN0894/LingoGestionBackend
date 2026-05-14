@@ -1,11 +1,7 @@
 package com.linogo.gestion.order.application
 
-import com.linogo.gestion.client.domain.Client
-import com.linogo.gestion.client.infrastructure.ClientRepository
-import com.linogo.gestion.clientaddress.domain.ClientAddress
-import com.linogo.gestion.clientaddress.infrastructure.ClientAddressRepository
-import com.linogo.gestion.clientphone.domain.ClientPhone
-import com.linogo.gestion.clientphone.infrastructure.ClientPhoneRepository
+import com.linogo.gestion.customer.domain.Customer
+import com.linogo.gestion.customer.domain.CustomerRepository
 import com.linogo.gestion.order.domain.Order
 import com.linogo.gestion.order.infrastructure.OrderRepository
 import com.linogo.gestion.orderproduct.domain.OrderProduct
@@ -19,9 +15,7 @@ import java.time.LocalDateTime
 @Service
 class CreateOrderCompleteService(
     private val orderRepository: OrderRepository,
-    private val clientRepository: ClientRepository,
-    private val clientAddressRepository: ClientAddressRepository,
-    private val clientPhoneRepository: ClientPhoneRepository,
+    private val customerRepository: CustomerRepository,
     private val stateRepository: StateRepository,
     private val productRepository: ProductRepository,
     private val orderProductRepository: OrderProductRepository
@@ -29,46 +23,43 @@ class CreateOrderCompleteService(
 
     @Transactional
     fun create(request: CreateOrderCompleteRequest): OrderCompleteResponse {
-        // 1. Buscar o crear cliente
-        val client = clientRepository.findById(request.idUser).orElseGet {
-            val newClient = Client(
-                idUser = request.idUser,
-                name = request.name,
-                defaultPhone = request.phone,
-                defaultCity = request.city,
-                defaultAddress = request.address
+        // 1. Buscar o crear customer por cédula
+        val existingCustomer = customerRepository.findByCedula(request.cedula)
+        val customer = if (existingCustomer != null) {
+            // Agregar teléfono si no existe
+            val updatedPhones = if (existingCustomer.phones.none { it == request.phone }) {
+                existingCustomer.phones + request.phone
+            } else existingCustomer.phones
+
+            // Agregar dirección si no existe (combinada address + city)
+            val fullAddress = "${request.address}, ${request.city}"
+            val updatedAddresses = if (existingCustomer.addresses.none { it == fullAddress }) {
+                existingCustomer.addresses + fullAddress
+            } else existingCustomer.addresses
+
+            if (updatedPhones != existingCustomer.phones || updatedAddresses != existingCustomer.addresses) {
+                customerRepository.save(existingCustomer.copy(phones = updatedPhones, addresses = updatedAddresses))
+            } else existingCustomer
+        } else {
+            val fullAddress = "${request.address}, ${request.city}"
+            customerRepository.save(
+                Customer(
+                    cedula = request.cedula,
+                    name = request.name,
+                    phones = listOf(request.phone),
+                    addresses = listOf(fullAddress)
+                )
             )
-            clientRepository.save(newClient)
         }
 
-        // 2. Agregar teléfono si no existe
-        val existingPhones = clientPhoneRepository.findByClientId(client.idUser)
-        if (existingPhones.none { it.phone == request.phone }) {
-            val clientPhone = ClientPhone(
-                client = client,
-                phone = request.phone
-            )
-            clientPhoneRepository.save(clientPhone)
-        }
+        // 2. Buscar estado de operación por ID
+        val operationState = stateRepository.findById(request.order.operationStateId)
+            .orElseThrow { IllegalArgumentException("State with id ${request.order.operationStateId} not found") }
 
-        // 3. Agregar dirección si no existe
-        val existingAddresses = clientAddressRepository.findByClientId(client.idUser)
-        if (existingAddresses.none { it.address == request.address && it.city == request.city }) {
-            val clientAddress = ClientAddress(
-                client = client,
-                address = request.address,
-                city = request.city
-            )
-            clientAddressRepository.save(clientAddress)
-        }
-
-        // 4. Buscar estado de operación por nombre
-        val operationState = stateRepository.findAll().find { it.name.equals(request.order.operationState, ignoreCase = true) }
-            ?: throw IllegalArgumentException("State '${request.order.operationState}' not found")
-
-        // 5. Crear la orden
+        // 3. Crear la orden (snapshot de customerId y customerName)
         val order = Order(
-            client = client,
+            customerId = customer.cedula,
+            customerName = customer.name,
             operationState = operationState,
             orderPrice = request.order.orderPrice,
             orderAddress = request.address,
@@ -77,7 +68,7 @@ class CreateOrderCompleteService(
         )
         val savedOrder = orderRepository.save(order)
 
-        // 6. Crear productos de la orden
+        // 4. Crear productos de la orden
         val orderProducts = request.order.orderProducts.map { productData ->
             val product = productRepository.findById(productData.idProduct)
                 .orElseThrow { IllegalArgumentException("Product with id ${productData.idProduct} not found") }
@@ -97,8 +88,8 @@ class CreateOrderCompleteService(
     private fun Order.toResponse(): OrderCompleteResponse {
         return OrderCompleteResponse(
             id = this.id!!,
-            clientId = this.client.idUser,
-            clientName = this.client.name,
+            customerId = this.customerId,
+            customerName = this.customerName,
             operationStateId = this.operationState.id,
             operationStateName = this.operationState.name,
             orderPrice = this.orderPrice,
@@ -113,8 +104,8 @@ class CreateOrderCompleteService(
 
 data class OrderCompleteResponse(
     val id: Long,
-    val clientId: String,
-    val clientName: String,
+    val customerId: Long,
+    val customerName: String,
     val operationStateId: Long,
     val operationStateName: String,
     val orderPrice: Long,

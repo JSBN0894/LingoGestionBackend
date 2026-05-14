@@ -29,47 +29,45 @@ class CustomerServiceTest {
 
     @BeforeEach
     fun setUp() {
-        customer = Customer(name = "Juan Pérez", email = "juan@example.com", phones = listOf("+54911223344"))
+        customer = Customer(cedula = 123456789L, name = "Juan Pérez", phones = listOf("+54911223344"))
     }
 
     @Test
     fun `createCustomer should save and return customer`() {
-        val savedCustomer = customer.copy(id = 1L)
-        `when`(customerRepository.save(any())).thenReturn(savedCustomer)
+        `when`(customerRepository.save(any())).thenReturn(customer)
 
         val result = customerService.createCustomer(customer)
 
         assertNotNull(result)
-        assertEquals(1L, result.id)
+        assertEquals(123456789L, result.cedula)
         assertEquals("Juan Pérez", result.name)
         verify(customerRepository).save(any())
     }
 
     @Test
     fun `getCustomer should return customer when exists`() {
-        val saved = customer.copy(id = 1L)
-        `when`(customerRepository.findById(1L)).thenReturn(saved)
+        `when`(customerRepository.findByCedula(123456789L)).thenReturn(customer)
 
-        val result = customerService.getCustomer(1L)
+        val result = customerService.getCustomer(123456789L)
 
         assertNotNull(result)
-        assertEquals(1L, result!!.id)
-        verify(customerRepository).findById(1L)
+        assertEquals(123456789L, result!!.cedula)
+        verify(customerRepository).findByCedula(123456789L)
     }
 
     @Test
     fun `getCustomer should return null when not found`() {
-        `when`(customerRepository.findById(999L)).thenReturn(null)
+        `when`(customerRepository.findByCedula(999L)).thenReturn(null)
 
         val result = customerService.getCustomer(999L)
 
         assertNull(result)
-        verify(customerRepository).findById(999L)
+        verify(customerRepository).findByCedula(999L)
     }
 
     @Test
     fun `getAllCustomers should return list of customers`() {
-        val customers = listOf(customer.copy(id = 1L), customer.copy(id = 2L, name = "María"))
+        val customers = listOf(customer, Customer(cedula = 987654321L, name = "María"))
         `when`(customerRepository.findAll()).thenReturn(customers)
 
         val result = customerService.getAllCustomers()
@@ -90,8 +88,8 @@ class CustomerServiceTest {
 
     @Test
     fun `deleteCustomer should remove customer`() {
-        customerService.deleteCustomer(1L)
+        customerService.deleteCustomer(123456789L)
 
-        verify(customerRepository).deleteById(1L)
+        verify(customerRepository).deleteByCedula(123456789L)
     }
 }

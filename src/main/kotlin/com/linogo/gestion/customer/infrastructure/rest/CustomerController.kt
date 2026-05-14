@@ -15,9 +15,9 @@ class CustomerController(private val customerService: CustomerService) {
         return customerService.createCustomer(customer)
     }
 
-    @GetMapping("/{id}")
-    fun get(@PathVariable id: Long): Customer? {
-        return customerService.getCustomer(id)
+    @GetMapping("/{cedula}")
+    fun get(@PathVariable cedula: Long): Customer? {
+        return customerService.getCustomer(cedula)
     }
 
     @GetMapping
@@ -25,9 +25,14 @@ class CustomerController(private val customerService: CustomerService) {
         return customerService.getAllCustomers()
     }
 
-    @DeleteMapping("/{id}")
+    @PutMapping("/{cedula}")
+    fun update(@PathVariable cedula: Long, @RequestBody customer: Customer): Customer {
+        return customerService.updateCustomer(cedula, customer)
+    }
+
+    @DeleteMapping("/{cedula}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun delete(@PathVariable id: Long) {
-        customerService.deleteCustomer(id)
+    fun delete(@PathVariable cedula: Long) {
+        customerService.deleteCustomer(cedula)
     }
 }

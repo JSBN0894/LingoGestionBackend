@@ -6,17 +6,18 @@ import jakarta.persistence.*
 @Table(name = "customers")
 class CustomerEntity(
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
+    val cedula: Long,
 
     @Column(nullable = false)
     val name: String,
 
-    @Column(nullable = false)
-    val email: String,
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "customer_phones", joinColumns = [JoinColumn(name = "customer_cedula")])
+    @Column(name = "phone")
+    val phones: List<String> = emptyList(),
 
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "customer_phones", joinColumns = [JoinColumn(name = "customer_id")])
-    @Column(name = "phone")
-    val phones: List<String> = emptyList()
+    @CollectionTable(name = "customer_addresses", joinColumns = [JoinColumn(name = "customer_cedula")])
+    @Column(name = "address")
+    val addresses: List<String> = emptyList()
 )
