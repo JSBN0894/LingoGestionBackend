@@ -32,17 +32,17 @@ class SecurityConfig(
             // CSRF deshabilitado para API REST stateless
             // CSRF no es necesario cuando se usa JWT en headers Authorization
             .csrf { csrf -> csrf.disable() }
-            
+
             // CORS configurado correctamente
             .cors { cors -> cors.configurationSource(corsConfigurationSource()) }
-            
+
             // Manejo de excepciones
             .exceptionHandling { exceptions ->
                 exceptions
                     .authenticationEntryPoint { request, response, authException ->
                         response.status = 401
                         response.contentType = "application/json"
-                        response.writer.write("""{"error": "Unauthorized", "message": "Autenticación requerida"}""")
+                        response.writer.write("""{"error": "Unauthorized", "message": "Autenticacion requerida"}""")
                     }
                     .accessDeniedHandler { request, response, accessDeniedException ->
                         response.status = 403
@@ -50,37 +50,60 @@ class SecurityConfig(
                         response.writer.write("""{"error": "Forbidden", "message": "Acceso denegado"}""")
                     }
             }
-            
-            // Sesión stateless - no se crea sesión HTTP
+
+            // Sesion stateless - no se crea sesion HTTP
             .sessionManagement { session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             }
-            
+
             // Autorizaciones
             .authorizeHttpRequests { auth ->
-                // Endpoints públicos
+                // Endpoints publicos
                 auth.requestMatchers(
                     "/api/auth/login",
                     "/api/auth/refresh",
-                    "/swagger-ui/**",
-                    "/v3/api-docs/**",
-                    "/swagger-resources/**",
                     "/api/sync/**"
                 ).permitAll()
-                
+
+                // Swagger/OpenAPI - solo ADMIN
+                auth.requestMatchers(
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
+                    "/v3/api-docs/**",
+                    "/v3/api-docs",
+                    "/api-docs/**",
+                    "/api-docs",
+                    "/api-docs/swagger-config",
+                    "/swagger-resources/**",
+                    "/webjars/**"
+                ).hasRole("ADMIN")
+
                 // Requests OPTIONS para preflight CORS
                 auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                
-                // Todo lo demás requiere autenticación
+
+                // Todo lo demas requiere autenticacion
                 auth.anyRequest().authenticated()
             }
-            
-            // Filtro JWT antes del filtro de autenticación por username/password
+
+            // Filtro JWT antes del filtro de autenticacion por username/password
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
-            
-            // Deshabilitar cache para respuestas
+
+            // Security headers + deshabilitar cache
             .headers { headers ->
-                headers.cacheControl { cache -> cache.disable() }
+                headers
+                    .cacheControl { cache -> cache.disable() }
+                    .httpStrictTransportSecurity { hsts ->
+                        hsts
+                            .maxAgeInSeconds(31536000)
+                            .includeSubDomains(true)
+                    }
+                    .frameOptions { frame ->
+                        frame.deny()
+                    }
+                    .contentTypeOptions { } // X-Content-Type-Options: nosniff
+                    .contentSecurityPolicy { csp ->
+                        csp.policyDirectives("default-src 'self'")
+                    }
             }
 
         return http.build()
@@ -104,18 +127,23 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration().apply {
-            // Orígenes permitidos - configurar mediante variable de entorno en producción
+            // Origenes permitidos - configurar mediante variable de entorno en produccion
             val allowedOriginsEnv = System.getenv("CORS_ALLOWED_ORIGINS")
                 ?: "https://tu-dominio.com,https://app.tu-dominio.com,android-app://com.linogo.app"
-            
+
             allowedOrigins = allowedOriginsEnv.split(",").map { it.trim() }
-            
-            // allowedOriginPatterns solo para desarrollo (no usar en producción)
+
+            // allowedOriginPatterns solo para desarrollo (no usar en produccion)
             val isDev = System.getenv("SPRING_PROFILES_ACTIVE") == "dev"
             if (isDev) {
-                allowedOriginPatterns = listOf("http://localhost:*", "http://10.0.2.2:*", "http://127.0.0.1:*")
+                allowedOriginPatterns = listOf(
+                    "http://localhost:*",
+                    "http://10.0.2.2:*",
+                    "http://127.0.0.1:*",
+                    "http://localhost:5173"
+                )
             }
-            
+
             allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
             allowedHeaders = listOf(
                 "Authorization",
