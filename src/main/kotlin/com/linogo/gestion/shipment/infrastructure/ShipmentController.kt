@@ -1,5 +1,7 @@
 package com.linogo.gestion.shipment.infrastructure
 
+import com.linogo.gestion.security.config.AdminOnly
+import com.linogo.gestion.security.config.Authenticated
 import com.linogo.gestion.security.config.LogisticaOnly
 import com.linogo.gestion.shipment.application.AssignGuideRequest
 import com.linogo.gestion.shipment.application.CreateShipmentRequest
@@ -17,24 +19,28 @@ class ShipmentController(
 ) {
 
     @PostMapping
+    @LogisticaOnly
     fun create(@Valid @RequestBody request: CreateShipmentRequest): ResponseEntity<Any> {
         val response = shipmentService.create(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
     @GetMapping("/{id}")
+    @Authenticated
     fun getById(@PathVariable id: Long): ResponseEntity<Any> {
         val response = shipmentService.findById(id)
         return ResponseEntity.ok(response)
     }
 
     @GetMapping
+    @Authenticated
     fun getAll(): ResponseEntity<Any> {
         val responses = shipmentService.findAll()
         return ResponseEntity.ok(responses)
     }
 
     @PutMapping("/{id}")
+    @LogisticaOnly
     fun update(
         @PathVariable id: Long,
         @Valid @RequestBody request: UpdateShipmentRequest
@@ -44,6 +50,7 @@ class ShipmentController(
     }
 
     @DeleteMapping("/{id}")
+    @AdminOnly
     fun delete(@PathVariable id: Long): ResponseEntity<Void> {
         shipmentService.delete(id)
         return ResponseEntity.noContent().build()
@@ -60,6 +67,7 @@ class ShipmentController(
     }
 
     @GetMapping("/{id}/tracking")
+    @Authenticated
     fun getTracking(@PathVariable id: Long): ResponseEntity<Any> {
         val history = shipmentService.getTrackingHistory(id)
         return ResponseEntity.ok(history)
