@@ -52,3 +52,12 @@ data class UserResponse(
     val fullName: String,
     val role: String
 )
+
+data class UserMeResponse(
+    val id: String,
+    val username: String,
+    val email: String,
+    val fullName: String,
+    val role: String,
+    val isEnabled: Boolean
+)

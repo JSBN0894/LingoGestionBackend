@@ -7,6 +7,7 @@ import com.linogo.gestion.security.infrastructure.AuthController
 import com.linogo.gestion.security.infrastructure.GlobalExceptionHandler
 import com.linogo.gestion.security.infrastructure.JwtAuthenticationFilter
 import com.linogo.gestion.security.infrastructure.JwtTokenProvider
+import com.linogo.gestion.security.infrastructure.UserRepository
 import com.linogo.gestion.security.service.AuthService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,6 +39,9 @@ class AuthControllerIntegrationTest {
 
     @MockBean
     private lateinit var authService: AuthService
+
+    @MockBean
+    private lateinit var userRepository: UserRepository
 
     @MockBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
