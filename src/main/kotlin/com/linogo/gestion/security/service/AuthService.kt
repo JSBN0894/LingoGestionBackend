@@ -58,7 +58,7 @@ class AuthService(
         val user = userRepository.findByUsername(request.username)
             ?: throw BadCredentialsException("Usuario no encontrado")
 
-        if (!user.isEnabled) {
+        if (!user.isEnabled()) {
             throw BadCredentialsException("Usuario deshabilitado")
         }
 
@@ -92,7 +92,7 @@ class AuthService(
             password = passwordEncoder.encode(request.password!!),
             fullName = request.fullName,
             role = Role.USER,
-            isEnabled = true
+            _isEnabled = true
         )
 
         val savedUser = userRepository.save(user)
@@ -197,6 +197,7 @@ private fun User.toUserResponse(): UserResponse {
         username = this.username,
         email = this.email,
         fullName = this.fullName,
-        role = this.role.name
+        role = this.role.name,
+        isEnabled = this.isEnabled()
     )
 }

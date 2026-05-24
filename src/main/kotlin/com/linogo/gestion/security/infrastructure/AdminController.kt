@@ -65,7 +65,7 @@ class AdminController(
             password = passwordEncoder.encode(request.password),
             fullName = request.fullName,
             role = request.role,
-            isEnabled = true,
+            _isEnabled = true,
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()
         )
@@ -113,13 +113,28 @@ class AdminController(
         return ResponseEntity.ok(mapOf("message" to "Usuario $deletedUsername eliminado"))
     }
 
+    @PatchMapping("/users/{id}/status")
+    @AdminOnly
+    @Operation(summary = "Activar/desactivar usuario", description = "Alterna el estado enabled de un usuario")
+    fun toggleUserStatus(
+        @PathVariable id: String
+    ): ResponseEntity<UserResponse> {
+        val user = userRepository.findById(id)
+            .orElseThrow { IllegalArgumentException("User with id $id not found") }
+        val newStatus = user.toggleEnabled()
+        val saved = userRepository.save(user)
+        log.info("ADMIN toggled status of ${saved.username}: enabled=$newStatus")
+        return ResponseEntity.ok(saved.toUserResponse())
+    }
+
     private fun User.toUserResponse(): UserResponse {
         return UserResponse(
             id = this.id ?: "",
             username = this.username,
             email = this.email,
             fullName = this.fullName,
-            role = this.role.name
+            role = this.role.name,
+            isEnabled = this.isEnabled()
         )
     }
 }

@@ -30,7 +30,7 @@ class User(
     var role: Role = Role.USER,
 
     @Column(name = "is_enabled", nullable = false)
-    private val isEnabled: Boolean = true, // Cambiado a private
+    private var _isEnabled: Boolean = true,
 
     @Column(nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
@@ -44,7 +44,13 @@ class User(
 
     override fun getPassword(): String = password
 
-    override fun isEnabled(): Boolean = isEnabled
+    override fun isEnabled(): Boolean = _isEnabled
+
+    fun toggleEnabled(): Boolean {
+        _isEnabled = !_isEnabled
+        updatedAt = LocalDateTime.now()
+        return _isEnabled
+    }
 
     override fun getAuthorities(): Collection<GrantedAuthority> =
         listOf(SimpleGrantedAuthority("ROLE_${role.name}"))

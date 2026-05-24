@@ -112,7 +112,7 @@ class DataInitializer {
                 password = encoder.encode("Admin@123456"),
                 fullName = "Administrador del Sistema",
                 role = Role.ADMIN,
-                isEnabled = true
+                _isEnabled = true
             ),
             User(
                 id = "b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22",
@@ -121,7 +121,7 @@ class DataInitializer {
                 password = encoder.encode("User@123456"),
                 fullName = "Usuario Demo",
                 role = Role.USER,
-                isEnabled = true
+                _isEnabled = true
             )
         )
         repo.saveAll(users)
