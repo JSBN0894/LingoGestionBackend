@@ -2,6 +2,9 @@ package com.linogo.gestion.customer.infrastructure.rest
 
 import com.linogo.gestion.customer.application.CustomerService
 import com.linogo.gestion.customer.domain.Customer
+import com.linogo.gestion.security.config.AdminOnly
+import com.linogo.gestion.security.config.Authenticated
+import com.linogo.gestion.security.config.VentasOnly
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
@@ -10,27 +13,32 @@ import org.springframework.web.bind.annotation.*
 class CustomerController(private val customerService: CustomerService) {
 
     @PostMapping
+    @VentasOnly
     @ResponseStatus(HttpStatus.CREATED)
     fun create(@RequestBody customer: Customer): Customer {
         return customerService.createCustomer(customer)
     }
 
     @GetMapping("/{cedula}")
+    @Authenticated
     fun get(@PathVariable cedula: Long): Customer? {
         return customerService.getCustomer(cedula)
     }
 
     @GetMapping
+    @Authenticated
     fun getAll(): List<Customer> {
         return customerService.getAllCustomers()
     }
 
     @PutMapping("/{cedula}")
+    @VentasOnly
     fun update(@PathVariable cedula: Long, @RequestBody customer: Customer): Customer {
         return customerService.updateCustomer(cedula, customer)
     }
 
     @DeleteMapping("/{cedula}")
+    @AdminOnly
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable cedula: Long) {
         customerService.deleteCustomer(cedula)
