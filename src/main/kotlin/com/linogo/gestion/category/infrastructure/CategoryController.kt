@@ -4,6 +4,8 @@ import com.linogo.gestion.category.application.CategoryResponse
 import com.linogo.gestion.category.application.CategoryService
 import com.linogo.gestion.category.application.CreateCategoryRequest
 import com.linogo.gestion.category.application.UpdateCategoryRequest
+import com.linogo.gestion.security.config.AdminOnly
+import com.linogo.gestion.security.config.Authenticated
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -23,24 +25,28 @@ class CategoryController(
 ) {
 
     @PostMapping
+    @AdminOnly
     fun create(@Valid @RequestBody request: CreateCategoryRequest): ResponseEntity<CategoryResponse> {
         val response = categoryService.create(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
     @GetMapping("/{id}")
+    @Authenticated
     fun getById(@PathVariable id: Long): ResponseEntity<CategoryResponse> {
         val response = categoryService.findById(id)
         return ResponseEntity.ok(response)
     }
 
     @GetMapping
+    @Authenticated
     fun getAll(): ResponseEntity<List<CategoryResponse>> {
         val responses = categoryService.findAll()
         return ResponseEntity.ok(responses)
     }
 
     @PutMapping("/{id}")
+    @AdminOnly
     fun update(
         @PathVariable id: Long,
         @Valid @RequestBody request: UpdateCategoryRequest
@@ -50,6 +56,7 @@ class CategoryController(
     }
 
     @DeleteMapping("/{id}")
+    @AdminOnly
     fun delete(@PathVariable id: Long): ResponseEntity<Void> {
         categoryService.delete(id)
         return ResponseEntity.noContent().build()
