@@ -6,19 +6,19 @@ import axios from 'axios'
  * so it's readable from JavaScript.
  */
 function getCsrfToken(): string | undefined {
-  const match = document.cookie.match(/(^|;)\\s*XSRF-TOKEN\\s*=\\s*([^;]+)/)
+  const match = document.cookie.match(/(^|;)\s*XSRF-TOKEN\s*=\s*([^;]+)/)
   return match ? decodeURIComponent(match[2]) : undefined
 }
 
 /**
  * Axios instance configured for the admin panel.
- * - baseURL: /api/web (all web auth endpoints)
+ * - baseURL: /api (all API endpoints)
  * - withCredentials: true (sends cookies automatically)
- * - Request interceptor: injects X-CSRF-Token header from cookie
+ * - Request interceptor: injects X-CSRF-Token header for mutation requests
  * - Response interceptor: handles 401 by redirecting to login
  */
 export const api = axios.create({
-  baseURL: '/api/web',
+  baseURL: '/api',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',

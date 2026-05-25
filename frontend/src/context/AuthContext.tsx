@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Auto-refresh user on mount
   const refresh = useCallback(async () => {
     try {
-      const { data } = await api.get<User>('/auth/me')
+      const { data } = await api.get<User>('/web/auth/me')
       setUser(data)
     } catch {
       setUser(null)
@@ -68,9 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string) => {
     // First, ensure we have a CSRF token by hitting the csrf-token endpoint
-    await api.get('/csrf-token')
+    await api.get('/web/csrf-token')
 
-    const { data } = await api.post('/login', { username, password })
+    const { data } = await api.post('/web/login', { username, password })
     // After successful login, refresh user state
     await refresh()
     return data
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await api.post('/logout')
+      await api.post('/web/logout')
     } finally {
       setUser(null)
       window.location.href = '/admin/login'

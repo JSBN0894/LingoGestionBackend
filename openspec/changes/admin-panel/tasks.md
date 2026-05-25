@@ -59,17 +59,17 @@ Chain strategy: pending
 
 ## Phase 5: Frontend Pages (chained PRs)
 
-- [ ] 5.1 Layout: Sidebar (collapsible), Header (user+logout), AdminLayout
-- [ ] 5.2 LoginPage: form, errors, rate-limit feedback
-- [ ] 5.3 DashboardPage: KPI cards, recent activity
-- [ ] 5.4 UsersPage: table, toggle, role change, CRUD
-- [ ] 5.5 ProductsPage: paginated, CRUD, image upload
-- [ ] 5.6 CategoriesPage: list, CRUD
-- [ ] 5.7 CustomersPage: list, CRUD, search
-- [ ] 5.8 OrdersPage + OrderDetailPage: paginated, detail with line items
-- [ ] 5.9 ShipmentsPage: list, CRUD, guide assignment
-- [ ] 5.10 StatesPage: list, CRUD
-- [ ] 5.11 AuditLogPage: paginated table, filters
-- [ ] 5.12 Wire App.tsx + main.tsx: routes, protected routes, role guards
+- [x] 5.1 Layout: Sidebar (collapsible), Header (user+logout), AdminLayout
+- [x] 5.2 LoginPage: form, errors, rate-limit feedback
+- [x] 5.3 DashboardPage: KPI cards, recent activity
+- [x] 5.4 UsersPage: table, toggle, role change, CRUD
+- [x] 5.5 ProductsPage: paginated, CRUD, image upload
+- [x] 5.6 CategoriesPage: list, CRUD
+- [x] 5.7 CustomersPage: list, CRUD, search
+- [x] 5.8 OrdersPage + OrderDetailPage: paginated, detail with line items
+- [x] 5.9 ShipmentsPage: list, CRUD, guide assignment
+- [x] 5.10 StatesPage: list, CRUD
+- [x] 5.11 AuditLogPage: paginated table, filters
+- [x] 5.12 Wire App.tsx + main.tsx: routes, protected routes, role guards
 
 **Deps**: 5.1 ÔåÆ {5.2-5.11 autonomous} ÔåÆ 5.12
