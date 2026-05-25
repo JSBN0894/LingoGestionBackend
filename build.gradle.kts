@@ -65,3 +65,32 @@ allOpen {
 tasks.withType<Test> {
 	useJUnitPlatform()
 }
+
+// Frontend build integration
+val frontendDir = layout.projectDirectory.dir("frontend")
+val packageJson = frontendDir.file("package.json")
+
+val npmInstall by tasks.registering(Exec::class) {
+	workingDir = frontendDir.asFile
+	commandLine(
+		if (System.getProperty("os.name").lowercase().contains("windows")) "cmd" else "sh",
+		if (System.getProperty("os.name").lowercase().contains("windows")) "/c" else "-c",
+		"npm ci"
+	)
+	onlyIf { packageJson.asFile.exists() }
+}
+
+val npmBuild by tasks.registering(Exec::class) {
+	workingDir = frontendDir.asFile
+	commandLine(
+		if (System.getProperty("os.name").lowercase().contains("windows")) "cmd" else "sh",
+		if (System.getProperty("os.name").lowercase().contains("windows")) "/c" else "-c",
+		"npm run build"
+	)
+	dependsOn(npmInstall)
+	onlyIf { packageJson.asFile.exists() }
+}
+
+tasks.named("bootJar") {
+	dependsOn(npmBuild)
+}

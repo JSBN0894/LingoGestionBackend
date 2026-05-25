@@ -62,3 +62,7 @@ uploads/
 
 # Duplicate project (legacy)
 gestion/
+
+# Frontend (admin panel) — source kept, build artifacts ignored
+frontend/node_modules/
+frontend/dist/
