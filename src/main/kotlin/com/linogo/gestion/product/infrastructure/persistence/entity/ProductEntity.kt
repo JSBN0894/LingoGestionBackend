@@ -8,7 +8,8 @@ import java.time.LocalDateTime
 @Table(name = "products")
 class ProductEntity(
     @Id
-    val id: Long,
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0,
 
     @Column(nullable = false)
     val name: String,

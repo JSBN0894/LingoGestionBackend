@@ -32,6 +32,109 @@ import { toast } from 'sonner'
 
 const PAGE_SIZE = 20
 
+function ProductForm({
+  formData,
+  categories,
+  imagePreview,
+  onFormChange,
+  onImageChange,
+}: {
+  formData: CreateProductRequest
+  categories: Category[]
+  imagePreview: string
+  onFormChange: (data: CreateProductRequest) => void
+  onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+}) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="text-sm font-medium">Name</label>
+        <Input
+          value={formData.name}
+          onChange={(e) => onFormChange({ ...formData, name: e.target.value })}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm font-medium">Price</label>
+          <Input
+            type="text"
+            inputMode="numeric"
+            value={formData.pricePerUnit === 0 ? '' : String(formData.pricePerUnit)}
+            placeholder="0"
+            onChange={(e) => {
+              const raw = e.target.value
+              if (raw === '' || raw === '0') {
+                onFormChange({ ...formData, pricePerUnit: 0 })
+              } else if (/^\d+$/.test(raw)) {
+                onFormChange({ ...formData, pricePerUnit: Number(raw) })
+              }
+            }}
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Stock</label>
+          <Input
+            type="text"
+            inputMode="numeric"
+            value={formData.stock === 0 ? '' : String(formData.stock)}
+            placeholder="0"
+            onChange={(e) => {
+              const raw = e.target.value
+              if (raw === '' || raw === '0') {
+                onFormChange({ ...formData, stock: 0 })
+              } else if (/^\d+$/.test(raw)) {
+                onFormChange({ ...formData, stock: Number(raw) })
+              }
+            }}
+          />
+        </div>
+      </div>
+      <div>
+        <label className="text-sm font-medium">Description</label>
+        <Input
+          value={formData.description}
+          onChange={(e) => onFormChange({ ...formData, description: e.target.value })}
+        />
+      </div>
+      <div>
+        <label className="text-sm font-medium">Category</label>
+        <Select
+          value={formData.categoryId?.toString() ?? 'none'}
+          onValueChange={(v) =>
+            onFormChange({ ...formData, categoryId: v !== 'none' ? Number(v) : undefined })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">No category</SelectItem>
+            {categories.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id.toString()}>
+                {cat.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <label className="text-sm font-medium">Image</label>
+        <div className="flex items-center gap-4">
+          <Input type="file" accept="image/*" onChange={onImageChange} />
+          {imagePreview && (
+            <img
+              src={imagePreview}
+              alt="Preview"
+              className="h-16 w-16 rounded object-cover"
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -177,77 +280,6 @@ export function ProductsPage() {
 
   if (loading) return <div className="text-muted-foreground">Loading products...</div>
 
-  const ProductForm = (_props: { isEdit: boolean }) => (
-    <div className="space-y-4">
-      <div>
-        <label className="text-sm font-medium">Name</label>
-        <Input
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-sm font-medium">Price</label>
-          <Input
-            type="number"
-            value={formData.pricePerUnit}
-            onChange={(e) => setFormData({ ...formData, pricePerUnit: Number(e.target.value) })}
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium">Stock</label>
-          <Input
-            type="number"
-            value={formData.stock}
-            onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) })}
-          />
-        </div>
-      </div>
-      <div>
-        <label className="text-sm font-medium">Description</label>
-        <Input
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium">Category</label>
-        <Select
-          value={formData.categoryId?.toString() ?? ''}
-          onValueChange={(v) =>
-            setFormData({ ...formData, categoryId: v ? Number(v) : undefined })
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">No category</SelectItem>
-            {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id.toString()}>
-                {cat.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div>
-        <label className="text-sm font-medium">Image</label>
-        <div className="flex items-center gap-4">
-          <Input type="file" accept="image/*" onChange={handleImageChange} />
-          {imagePreview && (
-            <img
-              src={imagePreview.startsWith('/') ? `/api${imagePreview}` : imagePreview}
-              alt="Preview"
-              className="h-16 w-16 rounded object-cover"
-            />
-          )}
-        </div>
-      </div>
-    </div>
-  )
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -276,7 +308,7 @@ export function ProductsPage() {
                 <TableCell>
                   {product.imageUrl ? (
                     <img
-                      src={product.imageUrl.startsWith('/') ? `/api${product.imageUrl}` : product.imageUrl}
+                      src={product.imageUrl}
                       alt={product.name}
                       className="h-10 w-10 rounded object-cover"
                     />
@@ -322,7 +354,13 @@ export function ProductsPage() {
             <DialogTitle>Create Product</DialogTitle>
             <DialogDescription>Add a new product to the catalog.</DialogDescription>
           </DialogHeader>
-          <ProductForm isEdit={false} />
+          <ProductForm
+            formData={formData}
+            categories={categories}
+            imagePreview={imagePreview}
+            onFormChange={setFormData}
+            onImageChange={handleImageChange}
+          />
           <DialogFooter>
             <Button variant="outline" onClick={() => { setCreateOpen(false); resetForm() }}>
               Cancel
@@ -338,7 +376,13 @@ export function ProductsPage() {
           <DialogHeader>
             <DialogTitle>Edit Product</DialogTitle>
           </DialogHeader>
-          <ProductForm isEdit />
+          <ProductForm
+            formData={formData}
+            categories={categories}
+            imagePreview={imagePreview}
+            onFormChange={setFormData}
+            onImageChange={handleImageChange}
+          />
           <DialogFooter>
             <Button variant="outline" onClick={() => { setEditOpen(false); resetForm() }}>
               Cancel

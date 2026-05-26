@@ -46,7 +46,11 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Avoid redirect loop if already on login page
-      if (!window.location.pathname.endsWith('/login')) {
+      // Also skip redirect for the initial auth check endpoint
+      const currentPath = window.location.pathname
+      const isAuthCheck = error.config?.url?.includes('/web/auth/me')
+
+      if (!currentPath.endsWith('/login') && !isAuthCheck) {
         window.location.href = '/admin/login'
       }
     }

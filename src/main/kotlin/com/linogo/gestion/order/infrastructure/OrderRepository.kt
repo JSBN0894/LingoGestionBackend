@@ -8,9 +8,9 @@ import org.springframework.stereotype.Repository
 @Repository
 interface OrderRepository : JpaRepository<Order, Long> {
     
-    @EntityGraph(attributePaths = ["client", "operationState"])
+    @EntityGraph(attributePaths = ["operationState"])
     override fun findAll(): List<Order>
     
-    @EntityGraph(attributePaths = ["client", "operationState"])
+    @EntityGraph(attributePaths = ["operationState"])
     override fun findById(id: Long): java.util.Optional<Order>
 }

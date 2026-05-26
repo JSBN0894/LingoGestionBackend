@@ -27,4 +27,9 @@ export default defineConfig({
       '@': resolve(__dirname, './src'),
     },
   },
+  test: {
+    globals: true,
+    environment: 'happy-dom',
+    setupFiles: './src/test/setup.ts',
+  },
 })

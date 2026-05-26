@@ -140,10 +140,13 @@ class AuthService(
         revokeAllUserTokens(userId)
     }
 
+    fun createRefreshTokenPublic(user: User): String {
+        return createRefreshToken(user)
+    }
+
     private fun createRefreshToken(user: User): String {
-        refreshTokenRepository.findByUserId(user.id!!)?.let {
-            refreshTokenRepository.delete(it)
-        }
+        // Use deleteByUserId to avoid optimistic locking issues
+        refreshTokenRepository.deleteByUserId(user.id!!)
 
         val refreshToken = jwtTokenProvider.generateRefreshToken(user)
         val refreshTokenEntity = RefreshToken(

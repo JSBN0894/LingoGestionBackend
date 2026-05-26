@@ -22,11 +22,11 @@ class ProductService(
         }
 
         val product = Product(
-            id = request.id,
+            id = 0,
             name = request.name,
             pricePerUnit = request.pricePerUnit,
             stock = request.stock,
-            imageUrl = request.imageUrl,
+            imageUrl = request.imageUrl ?: "",
             description = request.description,
             category = category
         )
@@ -70,7 +70,7 @@ class ProductService(
             name = request.name,
             pricePerUnit = request.pricePerUnit,
             stock = request.stock,
-            imageUrl = request.imageUrl,
+            imageUrl = request.imageUrl ?: product.imageUrl,
             description = request.description,
             category = category,
             updatedAt = java.time.LocalDateTime.now()

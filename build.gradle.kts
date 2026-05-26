@@ -70,6 +70,16 @@ tasks.withType<Test> {
 val frontendDir = layout.projectDirectory.dir("frontend")
 val packageJson = frontendDir.file("package.json")
 
+val hasNpm: Boolean by extra {
+	try {
+		val isWindows = System.getProperty("os.name").lowercase().contains("windows")
+		val process = ProcessBuilder(if (isWindows) listOf("cmd", "/c", "npm --version") else listOf("sh", "-c", "npm --version"))
+			.redirectErrorStream(true)
+			.start()
+		process.waitFor() == 0
+	} catch (e: Exception) { false }
+}
+
 val npmInstall by tasks.registering(Exec::class) {
 	workingDir = frontendDir.asFile
 	commandLine(
@@ -77,7 +87,7 @@ val npmInstall by tasks.registering(Exec::class) {
 		if (System.getProperty("os.name").lowercase().contains("windows")) "/c" else "-c",
 		"npm ci"
 	)
-	onlyIf { packageJson.asFile.exists() }
+	onlyIf { packageJson.asFile.exists() && hasNpm }
 }
 
 val npmBuild by tasks.registering(Exec::class) {
@@ -88,7 +98,7 @@ val npmBuild by tasks.registering(Exec::class) {
 		"npm run build"
 	)
 	dependsOn(npmInstall)
-	onlyIf { packageJson.asFile.exists() }
+	onlyIf { packageJson.asFile.exists() && hasNpm }
 }
 
 tasks.named("bootJar") {

@@ -1,9 +1,13 @@
 package com.linogo.gestion.security.infrastructure
 
+import com.linogo.gestion.security.application.AuditLogEntry
+import com.linogo.gestion.security.application.AuditLogPageResponse
 import com.linogo.gestion.security.application.UserResponse
 import com.linogo.gestion.security.config.AdminOnly
+import com.linogo.gestion.security.config.Audited
 import com.linogo.gestion.security.domain.Role
 import com.linogo.gestion.security.domain.User
+import com.linogo.gestion.security.infrastructure.AuditLogJpaRepository
 import com.linogo.gestion.security.service.CustomUserDetailsService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
@@ -13,12 +17,17 @@ import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.web.bind.annotation.*
+import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 
 @RestController
 @RequestMapping("/api/admin")
@@ -27,7 +36,8 @@ import java.time.LocalDateTime
 class AdminController(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
-    private val userDetailsService: CustomUserDetailsService
+    private val userDetailsService: CustomUserDetailsService,
+    private val auditLogRepository: AuditLogJpaRepository
 ) {
     private val log = LoggerFactory.getLogger(AdminController::class.java)
 
@@ -50,6 +60,7 @@ class AdminController(
 
     @PostMapping("/users")
     @AdminOnly
+    @Audited(action = "CREATE", entityType = "USER")
     @Operation(summary = "Crear usuario con rol específico")
     fun createUser(@Valid @RequestBody request: CreateUserRequest): ResponseEntity<UserResponse> {
         if (userDetailsService.existsByUsername(request.username)) {
@@ -77,6 +88,7 @@ class AdminController(
 
     @PatchMapping("/users/{id}/role")
     @AdminOnly
+    @Audited(action = "ROLE_CHANGE", entityType = "USER")
     @Operation(summary = "Cambiar rol de un usuario")
     fun updateUserRole(
         @PathVariable id: String,
@@ -93,8 +105,10 @@ class AdminController(
         return ResponseEntity.ok(saved.toUserResponse())
     }
 
+    @Transactional
     @DeleteMapping("/users/{userId}")
     @AdminOnly
+    @Audited(action = "DELETE", entityType = "USER")
     @Operation(summary = "Eliminar usuario")
     fun deleteUser(
         @PathVariable userId: String,
@@ -115,6 +129,7 @@ class AdminController(
 
     @PatchMapping("/users/{id}/status")
     @AdminOnly
+    @Audited(action = "STATUS_TOGGLE", entityType = "USER")
     @Operation(summary = "Activar/desactivar usuario", description = "Alterna el estado enabled de un usuario")
     fun toggleUserStatus(
         @PathVariable id: String
@@ -125,6 +140,56 @@ class AdminController(
         val saved = userRepository.save(user)
         log.info("ADMIN toggled status of ${saved.username}: enabled=$newStatus")
         return ResponseEntity.ok(saved.toUserResponse())
+    }
+
+    @GetMapping("/audit")
+    @AdminOnly
+    @Operation(summary = "Listar audit logs", description = "Solo administradores pueden acceder")
+    fun getAuditLogs(
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+        @RequestParam(required = false) username: String?,
+        @RequestParam(required = false) entityType: String?,
+        @RequestParam(required = false) action: String?,
+        @RequestParam(required = false) fromDate: LocalDate?,
+        @RequestParam(required = false) toDate: LocalDate?
+    ): ResponseEntity<AuditLogPageResponse> {
+        val fromDateTime = fromDate?.atStartOfDay()
+        val toDateTime = toDate?.atTime(LocalTime.MAX)
+
+        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+        val spec = AuditLogJpaRepository.byFilters(
+            username = username,
+            entityType = entityType,
+            action = action,
+            fromDate = fromDateTime,
+            toDate = toDateTime
+        )
+        val auditPage = auditLogRepository.findAll(spec, pageable)
+
+        val entries = auditPage.content.map { entity ->
+            AuditLogEntry(
+                id = entity.id,
+                username = entity.username,
+                action = entity.action,
+                entityType = entity.entityType,
+                entityId = entity.entityId,
+                oldValues = entity.oldValues,
+                newValues = entity.newValues,
+                ipAddress = entity.ipAddress,
+                createdAt = entity.createdAt
+            )
+        }
+
+        val response = AuditLogPageResponse(
+            content = entries,
+            totalElements = auditPage.totalElements,
+            totalPages = auditPage.totalPages,
+            currentPage = auditPage.number,
+            pageSize = auditPage.size
+        )
+
+        return ResponseEntity.ok(response)
     }
 
     private fun User.toUserResponse(): UserResponse {

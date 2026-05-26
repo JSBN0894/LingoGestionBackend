@@ -65,12 +65,19 @@ export function UsersPage() {
   const handleCreate = async () => {
     try {
       await api.post('/admin/users', formData)
-      toast.success('User created successfully')
       setCreateOpen(false)
       setFormData({ fullName: '', username: '', email: '', password: '', role: 'USER' })
-      fetchUsers()
-    } catch {
-      toast.error('Failed to create user')
+      await fetchUsers()
+      toast.success('User created successfully')
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string; details?: Array<{ field: string; message: string }> } } }
+      const details = axiosErr.response?.data?.details
+      if (details && details.length > 0) {
+        const messages = details.map((d) => `${d.field}: ${d.message}`)
+        toast.error(messages.join('\n'))
+      } else {
+        toast.error(axiosErr.response?.data?.message ?? 'Failed to create user')
+      }
     }
   }
 
@@ -102,10 +109,18 @@ export function UsersPage() {
       await api.delete(`/admin/users/${selectedUser.id}`)
       toast.success('User deleted')
       setDeleteOpen(false)
-      fetchUsers()
+      await fetchUsers()
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } }
-      toast.error(axiosErr.response?.data?.message ?? 'Failed to delete user')
+      const msg = axiosErr.response?.data?.message
+      if (msg?.includes('not found')) {
+        // User was already deleted (race condition or stale list)
+        toast.info('User was already removed. List refreshed.')
+        setDeleteOpen(false)
+        await fetchUsers()
+      } else {
+        toast.error(msg ?? 'Failed to delete user')
+      }
     }
   }
 

@@ -16,8 +16,7 @@ data class UpdateProductRequest(
     @field:Min(value = 0, message = "Stock must be non-negative")
     val stock: Int,
 
-    @field:NotBlank(message = "Image URL is required")
-    val imageUrl: String,
+    val imageUrl: String? = null,
 
     @field:NotBlank(message = "Description is required")
     val description: String,

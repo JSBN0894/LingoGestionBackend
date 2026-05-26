@@ -106,41 +106,6 @@ export function CategoriesPage() {
 
   if (loading) return <div className="text-muted-foreground">Loading categories...</div>
 
-  const CategoryForm = () => (
-    <div className="space-y-4">
-      <div>
-        <label className="text-sm font-medium">Name</label>
-        <Input
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium">Parent Category (optional)</label>
-        <Select
-          value={formData.parentId?.toString() ?? ''}
-          onValueChange={(v) =>
-            setFormData({ ...formData, parentId: v ? Number(v) : undefined })
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="No parent" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">No parent</SelectItem>
-            {categories
-              .filter((c) => c.id !== selectedCategory?.id)
-              .map((cat) => (
-                <SelectItem key={cat.id} value={cat.id.toString()}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  )
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -195,7 +160,36 @@ export function CategoriesPage() {
             <DialogTitle>Create Category</DialogTitle>
             <DialogDescription>Add a new category.</DialogDescription>
           </DialogHeader>
-          <CategoryForm />
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Name</label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Parent Category (optional)</label>
+              <Select
+                value={formData.parentId?.toString() ?? 'none'}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, parentId: v !== 'none' ? Number(v) : undefined })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="No parent" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No parent</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id.toString()}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setCreateOpen(false); resetForm() }}>
               Cancel
@@ -211,7 +205,38 @@ export function CategoriesPage() {
           <DialogHeader>
             <DialogTitle>Edit Category</DialogTitle>
           </DialogHeader>
-          <CategoryForm />
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Name</label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Parent Category (optional)</label>
+              <Select
+                value={formData.parentId?.toString() ?? 'none'}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, parentId: v !== 'none' ? Number(v) : undefined })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="No parent" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No parent</SelectItem>
+                  {categories
+                    .filter((c) => c.id !== selectedCategory?.id)
+                    .map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id.toString()}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setEditOpen(false); resetForm() }}>
               Cancel

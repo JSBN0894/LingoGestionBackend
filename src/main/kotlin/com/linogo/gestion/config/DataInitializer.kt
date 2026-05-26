@@ -104,18 +104,18 @@ class DataInitializer {
 
     private fun seedUsers(repo: UserRepository, encoder: PasswordEncoder) {
         if (repo.existsByUsername("admin")) return
-        val users = listOf(
-            User(
-                id = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-                username = "admin",
-                email = "admin@linogo.com",
-                password = encoder.encode("Admin@123456"),
-                fullName = "Administrador del Sistema",
-                role = Role.ADMIN,
-                _isEnabled = true
-            ),
-            User(
-                id = "b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22",
+        val admin = User(
+            username = "admin",
+            email = "admin@linogo.com",
+            password = encoder.encode("Admin@123456"),
+            fullName = "Administrador del Sistema",
+            role = Role.ADMIN,
+            _isEnabled = true
+        )
+        repo.save(admin)
+
+        if (!repo.existsByUsername("user")) {
+            val demoUser = User(
                 username = "user",
                 email = "user@linogo.com",
                 password = encoder.encode("User@123456"),
@@ -123,8 +123,9 @@ class DataInitializer {
                 role = Role.USER,
                 _isEnabled = true
             )
-        )
-        repo.saveAll(users)
-        log.info("Seed: ${users.size} usuarios creados (admin/Admin@123456, user/User@123456)")
+            repo.save(demoUser)
+        }
+
+        log.info("Seed: usuarios creados (admin/Admin@123456, user/User@123456)")
     }
 }
