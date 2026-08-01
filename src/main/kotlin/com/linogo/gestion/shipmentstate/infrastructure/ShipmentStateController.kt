@@ -1,8 +1,11 @@
 package com.linogo.gestion.shipmentstate.infrastructure
 
+import com.linogo.gestion.security.config.Authenticated
+import com.linogo.gestion.security.config.RequiresPermission
+import com.linogo.gestion.security.domain.Permission
 import com.linogo.gestion.shipmentstate.application.CreateShipmentStateRequest
+import com.linogo.gestion.shipmentstate.application.ShipmentStateResponse
 import com.linogo.gestion.shipmentstate.application.ShipmentStateService
-import com.linogo.gestion.state.infrastructure.StateRepository
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,27 +20,28 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/shipment-states")
 class ShipmentStateController(
-    private val service: ShipmentStateService,
-    private val stateRepository: StateRepository
+    private val service: ShipmentStateService
 ) {
 
+    // La búsqueda/validación del State vive en el service, no aquí — antes
+    // el controller inyectaba StateRepository directamente y mutaba el
+    // request, mezclando acceso a datos con la capa HTTP.
     @PostMapping
-    fun create(@Valid @RequestBody request: CreateShipmentStateRequest): ResponseEntity<Any> {
-        val state = stateRepository.findById(request.stateId)
-            .orElseThrow { IllegalArgumentException("State with id ${request.stateId} not found") }
-
-        val requestWithState = request.copy().apply { setState(state) }
-        val response = service.create(requestWithState)
+    @RequiresPermission(Permission.SHIPMENT_STATES_MANAGE)
+    fun create(@Valid @RequestBody request: CreateShipmentStateRequest): ResponseEntity<ShipmentStateResponse> {
+        val response = service.create(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
     @GetMapping
-    fun getAll(): ResponseEntity<Any> {
+    @Authenticated
+    fun getAll(): ResponseEntity<List<ShipmentStateResponse>> {
         val responses = service.findAll()
         return ResponseEntity.ok(responses)
     }
 
     @DeleteMapping("/{id}")
+    @RequiresPermission(Permission.SHIPMENT_STATES_MANAGE)
     fun delete(@PathVariable id: Long): ResponseEntity<Void> {
         service.delete(id)
         return ResponseEntity.noContent().build()

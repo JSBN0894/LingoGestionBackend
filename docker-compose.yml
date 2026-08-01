@@ -29,7 +29,9 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: dev,flyway
+      # El perfil "flyway" ya no hace falta: Flyway ahora esta habilitado
+      # por defecto en application.properties (ver migraciones V1-V4).
+      SPRING_PROFILES_ACTIVE: dev
       PGHOST: postgres
       PGPORT: 5432
       PGDATABASE: gestion_db

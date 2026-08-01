@@ -20,14 +20,22 @@ class User(
     val email: String,
 
     @Column(nullable = false)
-    private val password: String, // Cambiado a private
+    private var password: String, // Cambiado a private
 
     @Column(nullable = false)
     val fullName: String,
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    var role: Role = Role.USER,
+    // EAGER es obligatorio: CustomUserDetailsService carga el usuario dentro
+    // de una transacción que termina antes de que JwtAuthenticationFilter/
+    // CookieJwtFilter lean getAuthorities() fuera de sesión de Hibernate.
+    // Con LAZY, cada request autenticado lanzaría LazyInitializationException.
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "user_roles",
+        joinColumns = [JoinColumn(name = "user_id")],
+        inverseJoinColumns = [JoinColumn(name = "role_id")]
+    )
+    var roles: MutableSet<Role> = mutableSetOf(),
 
     @Column(name = "is_enabled", nullable = false)
     private var _isEnabled: Boolean = true,
@@ -52,14 +60,17 @@ class User(
         return _isEnabled
     }
 
+    fun changePassword(encodedPassword: String) {
+        password = encodedPassword
+        updatedAt = LocalDateTime.now()
+    }
+
     override fun getAuthorities(): Collection<GrantedAuthority> =
-        listOf(SimpleGrantedAuthority("ROLE_${role.name}"))
+        roles.flatMap { it.permissions }
+            .toSet()
+            .map { SimpleGrantedAuthority("PERM_$it") }
 
     override fun isAccountNonExpired(): Boolean = true
     override fun isAccountNonLocked(): Boolean = true
     override fun isCredentialsNonExpired(): Boolean = true
-}
-
-enum class Role {
-    USER, ADMIN, SELLER, VENTAS, PRODUCCION, LOGISTICA
 }

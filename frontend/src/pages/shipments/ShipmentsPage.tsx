@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import type { Shipment, ShipmentState, Order, CreateShipmentRequest, UpdateShipmentRequest, AssignGuideRequest } from '@/types/api'
+import type { Shipment, ShipmentState, Order, Carrier, CreateShipmentRequest, UpdateShipmentRequest, AssignGuideRequest } from '@/types/api'
 import { Plus, Pencil, Tag } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -34,6 +34,7 @@ export function ShipmentsPage() {
   const [shipments, setShipments] = useState<Shipment[]>([])
   const [shipmentStates, setShipmentStates] = useState<ShipmentState[]>([])
   const [orders, setOrders] = useState<Order[]>([])
+  const [carriers, setCarriers] = useState<Carrier[]>([])
   const [loading, setLoading] = useState(true)
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -42,7 +43,7 @@ export function ShipmentsPage() {
   const [formData, setFormData] = useState<CreateShipmentRequest>({
     orderId: 0,
     shippingStateId: 0,
-    carrier: 'Inter rapidisimo',
+    carrierId: 0,
     isCashOnDelivery: true,
   })
   const [guideNumber, setGuideNumber] = useState('')
@@ -76,14 +77,24 @@ export function ShipmentsPage() {
     }
   }, [])
 
+  const fetchCarriers = useCallback(async () => {
+    try {
+      const { data } = await api.get<Carrier[]>('/carriers')
+      setCarriers(Array.isArray(data) ? data : [])
+    } catch {
+      // Carriers might not be accessible
+    }
+  }, [])
+
   useEffect(() => {
     fetchShipments()
     fetchShipmentStates()
     fetchOrders()
-  }, [fetchShipments, fetchShipmentStates, fetchOrders])
+    fetchCarriers()
+  }, [fetchShipments, fetchShipmentStates, fetchOrders, fetchCarriers])
 
   const resetForm = () =>
-    setFormData({ orderId: 0, shippingStateId: 0, carrier: 'Inter rapidisimo', isCashOnDelivery: true })
+    setFormData({ orderId: 0, shippingStateId: 0, carrierId: carriers[0]?.id ?? 0, isCashOnDelivery: true })
 
   const handleCreate = async () => {
     try {
@@ -102,7 +113,7 @@ export function ShipmentsPage() {
     try {
       const payload: UpdateShipmentRequest = {
         shippingStateId: formData.shippingStateId,
-        carrier: formData.carrier,
+        carrierId: formData.carrierId,
         isCashOnDelivery: formData.isCashOnDelivery,
         shippingCost: formData.shippingCost,
         estimateDeliveryDate: formData.estimateDeliveryDate,
@@ -137,7 +148,7 @@ export function ShipmentsPage() {
     setFormData({
       orderId: shipment.orderId,
       shippingStateId: shipment.shippingState?.id ?? 0,
-      carrier: shipment.carrier,
+      carrierId: shipment.carrierId,
       isCashOnDelivery: shipment.isCashOnDelivery,
       shippingCost: shipment.shippingCost ?? undefined,
       estimateDeliveryDate: shipment.estimateDeliveryDate ?? undefined,
@@ -192,10 +203,21 @@ export function ShipmentsPage() {
       </div>
       <div>
         <label className="text-sm font-medium">Carrier</label>
-        <Input
-          value={formData.carrier ?? ''}
-          onChange={(e) => setFormData({ ...formData, carrier: e.target.value })}
-        />
+        <Select
+          value={formData.carrierId?.toString() ?? ''}
+          onValueChange={(v) => setFormData({ ...formData, carrierId: Number(v) })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select carrier" />
+          </SelectTrigger>
+          <SelectContent>
+            {carriers.map((c) => (
+              <SelectItem key={c.id} value={c.id.toString()}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -259,7 +281,7 @@ export function ShipmentsPage() {
               <TableRow key={shipment.id}>
                 <TableCell className="font-medium">#{shipment.id}</TableCell>
                 <TableCell>#{shipment.orderId}</TableCell>
-                <TableCell>{shipment.carrier}</TableCell>
+                <TableCell>{shipment.carrierName}</TableCell>
                 <TableCell>
                   {shipment.guideNumber ? (
                     <Badge variant="outline">{shipment.guideNumber}</Badge>

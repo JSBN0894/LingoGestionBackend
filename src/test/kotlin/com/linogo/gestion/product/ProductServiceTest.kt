@@ -60,7 +60,6 @@ class ProductServiceTest {
         )
 
         createRequest = CreateProductRequest(
-            id = 2L,
             name = "Molde Metal",
             pricePerUnit = 25000L,
             stock = 5,
@@ -77,21 +76,6 @@ class ProductServiceTest {
             description = "Molde de silicona profesional",
             categoryId = 1L
         )
-    }
-
-    @Test
-    fun `create should save product when data is valid without category`() {
-        val request = createRequest.copy(categoryId = null)
-        val savedProduct = existingProduct.copy(id = 2L, name = "Molde Metal", category = null)
-        `when`(productRepository.save(any())).thenReturn(savedProduct)
-
-        val response = productService.create(request)
-
-        assertNotNull(response)
-        assertEquals(2L, response.id)
-        assertEquals("Molde Metal", response.name)
-        assertEquals(null, response.category)
-        verify(productRepository).save(any())
     }
 
     @Test
@@ -194,7 +178,7 @@ class ProductServiceTest {
             name = updateRequest.name,
             pricePerUnit = updateRequest.pricePerUnit,
             stock = updateRequest.stock,
-            imageUrl = updateRequest.imageUrl,
+            imageUrl = updateRequest.imageUrl ?: existingProduct.imageUrl,
             description = updateRequest.description
         )
         `when`(productRepository.findById(1L)).thenReturn(existingProduct)

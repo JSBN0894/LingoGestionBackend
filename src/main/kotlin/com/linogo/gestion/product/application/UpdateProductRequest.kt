@@ -21,5 +21,6 @@ data class UpdateProductRequest(
     @field:NotBlank(message = "Description is required")
     val description: String,
 
-    val categoryId: Long? = null
+    @field:NotNull(message = "Category is required")
+    val categoryId: Long
 )

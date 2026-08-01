@@ -5,4 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface ShipmentRepository : JpaRepository<Shipment, Long>
+interface ShipmentRepository : JpaRepository<Shipment, Long> {
+    fun findByOrderId(orderId: Long): Shipment?
+}

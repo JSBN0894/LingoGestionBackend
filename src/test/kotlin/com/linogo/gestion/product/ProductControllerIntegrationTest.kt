@@ -43,13 +43,12 @@ class ProductControllerIntegrationTest {
     @Test
     fun `should create product when request is valid`() {
         val request = CreateProductRequest(
-            id = 1L,
             name = "Molde Silicona",
             pricePerUnit = 15000L,
             stock = 10,
             imageUrl = "https://example.com/img.jpg",
             description = "Molde de silicona",
-            categoryId = null
+            categoryId = 1L
         )
 
         mockMvc.perform(post("/api/products")
@@ -61,7 +60,6 @@ class ProductControllerIntegrationTest {
     @Test
     fun `should return bad request when product name is blank`() {
         val request = mapOf(
-            "id" to 1,
             "name" to "",
             "pricePerUnit" to 15000,
             "stock" to 10,

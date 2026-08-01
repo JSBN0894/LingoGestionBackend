@@ -1,11 +1,15 @@
 package com.linogo.gestion.config
 
+import com.linogo.gestion.carrier.domain.Carrier
+import com.linogo.gestion.carrier.infrastructure.CarrierRepository
 import com.linogo.gestion.category.domain.Category
 import com.linogo.gestion.category.infrastructure.CategoryRepository
 import com.linogo.gestion.customer.domain.Customer
 import com.linogo.gestion.customer.domain.CustomerRepository
+import com.linogo.gestion.security.domain.Permission
 import com.linogo.gestion.security.domain.Role
 import com.linogo.gestion.security.domain.User
+import com.linogo.gestion.security.infrastructure.RoleRepository
 import com.linogo.gestion.security.infrastructure.UserRepository
 import com.linogo.gestion.shipmentstate.domain.ShipmentState
 import com.linogo.gestion.shipmentstate.infrastructure.ShipmentStateRepository
@@ -25,26 +29,82 @@ class DataInitializer {
 
     private val log = LoggerFactory.getLogger(DataInitializer::class.java)
 
+    // Dataset completo de prueba: solo para desarrollo local. Nunca debe
+    // correr en produccion (crea clientes y usuarios ficticios).
     @Bean
-    @Profile("dev", "prod")
-    fun seedData(
+    @Profile("dev")
+    fun seedDevData(
         userRepository: UserRepository,
+        roleRepository: RoleRepository,
         passwordEncoder: PasswordEncoder,
         stateRepository: StateRepository,
         shipmentStateRepository: ShipmentStateRepository,
         categoryRepository: CategoryRepository,
         syncVersionRepository: SyncVersionRepository,
-        customerRepository: CustomerRepository
+        customerRepository: CustomerRepository,
+        carrierRepository: CarrierRepository
     ): CommandLineRunner {
         return CommandLineRunner {
             seedSyncVersion(syncVersionRepository)
             seedStates(stateRepository)
             seedShipmentStates(stateRepository, shipmentStateRepository)
             seedCategories(categoryRepository)
-            seedUsers(userRepository, passwordEncoder)
+            val adminRole = seedAdminRole(roleRepository)
+            val ventasRole = seedRole(roleRepository, "Ventas", setOf(
+                Permission.CUSTOMERS_MANAGE, Permission.ORDERS_MANAGE, Permission.ORDERS_SHIP, Permission.DASHBOARD_VIEW
+            ))
+            seedRole(roleRepository, "Producción", setOf(Permission.PRODUCTS_MANAGE))
+            seedRole(roleRepository, "Logística", setOf(
+                Permission.CARRIERS_MANAGE, Permission.SHIPMENTS_MANAGE, Permission.ORDERS_SHIP
+            ))
+            seedUsers(userRepository, passwordEncoder, adminRole, ventasRole)
             seedCustomers(customerRepository)
+            seedCarriers(carrierRepository)
         }
     }
+
+    // Produccion arranca en blanco: el unico dato creado es el admin inicial,
+    // con contrasena temporal que se debe cambiar en el primer ingreso.
+    @Bean
+    @Profile("prod")
+    fun seedProdAdmin(
+        userRepository: UserRepository,
+        roleRepository: RoleRepository,
+        passwordEncoder: PasswordEncoder
+    ): CommandLineRunner {
+        return CommandLineRunner {
+            if (!userRepository.existsByUsername("admin")) {
+                val adminRole = seedAdminRole(roleRepository)
+                val admin = User(
+                    username = "admin",
+                    email = "admin@linogo.com",
+                    password = passwordEncoder.encode("123456"),
+                    fullName = "Administrador del Sistema",
+                    roles = mutableSetOf(adminRole),
+                    _isEnabled = true
+                )
+                userRepository.save(admin)
+                log.warn("Seed: usuario admin inicial creado con contraseña temporal '123456' — cámbiala de inmediato desde la plataforma.")
+            }
+        }
+    }
+
+    // "Buscar o crear": una vez creado, el rol admin es propiedad de la UI de
+    // Roles y Permisos — nunca se resincroniza en cada arranque, para no
+    // pisar una edición manual posterior.
+    private fun seedAdminRole(repo: RoleRepository): Role =
+        repo.findByNameIgnoreCase("Administrador") ?: repo.save(
+            Role(
+                name = "Administrador",
+                description = "Acceso total al sistema",
+                permissions = Permission.entries.map { it.code }.toMutableSet()
+            )
+        )
+
+    private fun seedRole(repo: RoleRepository, name: String, permissions: Set<Permission>): Role =
+        repo.findByNameIgnoreCase(name) ?: repo.save(
+            Role(name = name, permissions = permissions.map { it.code }.toMutableSet())
+        )
 
     private fun seedSyncVersion(repo: SyncVersionRepository) {
         if (!repo.existsById(1L)) {
@@ -56,12 +116,12 @@ class DataInitializer {
     private fun seedStates(repo: StateRepository) {
         if (repo.count() > 0) return
         val states = listOf(
-            State(id = 1, name = "PENDIENTE", type = "OPERATION", priority = 1),
-            State(id = 2, name = "EN PROCESO", type = "OPERATION", priority = 2),
-            State(id = 3, name = "ENVIADO", type = "OPERATION", priority = 3),
-            State(id = 4, name = "DISPONIBLE", type = "OPERATION", priority = 4),
-            State(id = 5, name = "FINALIZADO", type = "OPERATION", priority = 5),
-            State(id = 6, name = "NOVEDAD", type = "OPERATION", priority = 6)
+            State(name = "PENDIENTE", type = "OPERATION", priority = 1),
+            State(name = "EN PROCESO", type = "OPERATION", priority = 2),
+            State(name = "ENVIADO", type = "OPERATION", priority = 3),
+            State(name = "DISPONIBLE", type = "OPERATION", priority = 4),
+            State(name = "FINALIZADO", type = "OPERATION", priority = 5),
+            State(name = "NOVEDAD", type = "OPERATION", priority = 6)
         )
         repo.saveAll(states)
         log.info("Seed: ${states.size} estados de operación creados")
@@ -71,11 +131,11 @@ class DataInitializer {
         if (repo.count() > 0) return
         val states = stateRepo.findAll().associateBy { it.name }
         val shipmentStates = listOf(
-            ShipmentState(id = 1, name = "Pendiente", state = states["PENDIENTE"]!!),
-            ShipmentState(id = 2, name = "En tránsito", state = states["ENVIADO"]!!),
-            ShipmentState(id = 3, name = "En oficina", state = states["DISPONIBLE"]!!),
-            ShipmentState(id = 4, name = "Entregado", state = states["FINALIZADO"]!!),
-            ShipmentState(id = 5, name = "Novedad", state = states["NOVEDAD"]!!)
+            ShipmentState(name = "Pendiente", state = states["PENDIENTE"]!!),
+            ShipmentState(name = "En tránsito", state = states["ENVIADO"]!!),
+            ShipmentState(name = "En oficina", state = states["DISPONIBLE"]!!),
+            ShipmentState(name = "Entregado", state = states["FINALIZADO"]!!),
+            ShipmentState(name = "Novedad", state = states["NOVEDAD"]!!)
         )
         repo.saveAll(shipmentStates)
         log.info("Seed: ${shipmentStates.size} estados de envío creados")
@@ -84,9 +144,9 @@ class DataInitializer {
     private fun seedCategories(repo: CategoryRepository) {
         if (repo.count() > 0) return
         val categories = listOf(
-            Category(id = 1, name = "Moldes"),
-            Category(id = 2, name = "Accesorios"),
-            Category(id = 3, name = "Herramientas")
+            Category(name = "Moldes"),
+            Category(name = "Accesorios"),
+            Category(name = "Herramientas")
         )
         repo.saveAll(categories)
         log.info("Seed: ${categories.size} categorías creadas")
@@ -102,17 +162,36 @@ class DataInitializer {
         log.info("Seed: ${customers.size} clientes creados")
     }
 
-    private fun seedUsers(repo: UserRepository, encoder: PasswordEncoder) {
-        if (repo.existsByUsername("admin")) return
-        val admin = User(
-            username = "admin",
-            email = "admin@linogo.com",
-            password = encoder.encode("Admin@123456"),
-            fullName = "Administrador del Sistema",
-            role = Role.ADMIN,
-            _isEnabled = true
+    private fun seedCarriers(repo: CarrierRepository) {
+        // No usamos "if (repo.count() > 0) return" como en los otros seeds:
+        // la migracion V4 ya inserta "Inter rapidisimo" (la necesita para
+        // migrar envios existentes), asi que el conteo nunca seria 0 aqui.
+        // Se verifica cada transportadora por separado para no bloquear la
+        // siembra del resto solo porque una ya exista.
+        val carriers = listOf(
+            Carrier(name = "Inter rapidisimo", contactPhone = "+57 1 800 000 0001"),
+            Carrier(name = "Coordinadora", contactPhone = "+57 1 800 000 0002"),
+            Carrier(name = "Servientrega", contactPhone = "+57 1 800 000 0003"),
+            Carrier(name = "TCC", contactPhone = "+57 1 800 000 0004")
         )
-        repo.save(admin)
+        val toCreate = carriers.filter { repo.findByNameIgnoreCase(it.name) == null }
+        if (toCreate.isEmpty()) return
+        repo.saveAll(toCreate)
+        log.info("Seed: ${toCreate.size} transportadoras creadas")
+    }
+
+    private fun seedUsers(repo: UserRepository, encoder: PasswordEncoder, adminRole: Role, ventasRole: Role) {
+        if (!repo.existsByUsername("admin")) {
+            val admin = User(
+                username = "admin",
+                email = "admin@linogo.com",
+                password = encoder.encode("Admin@123456"),
+                fullName = "Administrador del Sistema",
+                roles = mutableSetOf(adminRole),
+                _isEnabled = true
+            )
+            repo.save(admin)
+        }
 
         if (!repo.existsByUsername("user")) {
             val demoUser = User(
@@ -120,7 +199,7 @@ class DataInitializer {
                 email = "user@linogo.com",
                 password = encoder.encode("User@123456"),
                 fullName = "Usuario Demo",
-                role = Role.USER,
+                roles = mutableSetOf(ventasRole),
                 _isEnabled = true
             )
             repo.save(demoUser)

@@ -1,6 +1,5 @@
 package com.linogo.gestion.security
 
-import com.linogo.gestion.security.domain.Role
 import com.linogo.gestion.security.domain.User
 import com.linogo.gestion.security.infrastructure.JwtTokenProvider
 import com.linogo.gestion.security.infrastructure.TokenType
@@ -29,7 +28,7 @@ class JwtTokenProviderTest {
             email = "test@example.com",
             password = "password123",
             fullName = "Test User",
-            role = Role.USER,
+            roles = mutableSetOf(),
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()
         )

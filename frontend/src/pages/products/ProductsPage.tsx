@@ -100,16 +100,15 @@ function ProductForm({
       <div>
         <label className="text-sm font-medium">Category</label>
         <Select
-          value={formData.categoryId?.toString() ?? 'none'}
+          value={formData.categoryId?.toString() ?? '0'}
           onValueChange={(v) =>
-            onFormChange({ ...formData, categoryId: v !== 'none' ? Number(v) : undefined })
+            onFormChange({ ...formData, categoryId: Number(v) })
           }
         >
           <SelectTrigger>
             <SelectValue placeholder="Select category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="none">No category</SelectItem>
             {categories.map((cat) => (
               <SelectItem key={cat.id} value={cat.id.toString()}>
                 {cat.name}
@@ -150,7 +149,7 @@ export function ProductsPage() {
     pricePerUnit: 0,
     stock: 0,
     description: '',
-    categoryId: undefined,
+    categoryId: 0,
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState('')
@@ -183,7 +182,7 @@ export function ProductsPage() {
   }, [fetchProducts, fetchCategories])
 
   const resetForm = () => {
-    setFormData({ name: '', pricePerUnit: 0, stock: 0, description: '', categoryId: undefined })
+    setFormData({ name: '', pricePerUnit: 0, stock: 0, description: '', categoryId: 0 })
     setImageFile(null)
     setImagePreview('')
   }
@@ -269,7 +268,7 @@ export function ProductsPage() {
       pricePerUnit: product.pricePerUnit,
       stock: product.stock,
       description: product.description,
-      categoryId: product.category?.id,
+      categoryId: product.category.id,
     })
     setImagePreview(product.imageUrl)
     setEditOpen(true)
@@ -321,7 +320,7 @@ export function ProductsPage() {
                 <TableCell className="font-medium">{product.name}</TableCell>
                 <TableCell>{formatPrice(product.pricePerUnit)}</TableCell>
                 <TableCell>{product.stock}</TableCell>
-                <TableCell>{product.category?.name ?? '—'}</TableCell>
+                <TableCell>{product.category.name}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="icon" onClick={() => openEdit(product)}>

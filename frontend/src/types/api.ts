@@ -1,12 +1,18 @@
 /** API response and request types for the admin panel. */
 
 // --- Auth ---
+export interface RoleSummary {
+  id: number
+  name: string
+}
+
 export interface User {
   id: string
   username: string
   email: string
   fullName: string
-  role: string
+  roles: RoleSummary[]
+  permissions: string[]
   isEnabled: boolean
 }
 
@@ -20,11 +26,40 @@ export interface CreateUserRequest {
   username: string
   email: string
   password: string
-  role: string
+  roleIds: number[]
 }
 
-export interface UpdateRoleRequest {
-  role: string
+export interface UpdateUserRolesRequest {
+  roleIds: number[]
+}
+
+// --- Roles & Permissions ---
+export interface Permission {
+  code: string
+  description: string
+}
+
+export interface Role {
+  id: number
+  name: string
+  description: string | null
+  permissions: string[]
+  userCount: number
+}
+
+export interface RoleRequest {
+  name: string
+  description?: string
+  permissions: string[]
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string
+  newPassword: string
+}
+
+export interface ResetPasswordRequest {
+  newPassword: string
 }
 
 // --- Dashboard ---
@@ -50,7 +85,7 @@ export interface Product {
   stock: number
   imageUrl: string
   description: string
-  category: Category | null
+  category: Category
   createdAt: string
   updatedAt: string
 }
@@ -61,7 +96,7 @@ export interface CreateProductRequest {
   stock: number
   imageUrl?: string
   description: string
-  categoryId?: number
+  categoryId: number
 }
 
 export interface UpdateProductRequest {
@@ -70,7 +105,7 @@ export interface UpdateProductRequest {
   stock: number
   imageUrl?: string
   description: string
-  categoryId?: number
+  categoryId: number
 }
 
 // --- Categories ---
@@ -149,12 +184,33 @@ export interface UpdateOrderRequest {
   observation?: string
 }
 
+// --- Carriers ---
+export interface Carrier {
+  id: number
+  name: string
+  contactPhone: string | null
+  active: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateCarrierRequest {
+  name: string
+  contactPhone?: string
+}
+
+export interface UpdateCarrierRequest {
+  name: string
+  contactPhone?: string
+  active: boolean
+}
+
 // --- Shipments ---
 export interface Shipment {
   id: number
   orderId: number
-  orderCustomerName: string
-  carrier: string
+  carrierId: number
+  carrierName: string
   guideNumber: string | null
   shippingState: ShipmentState | null
   isCashOnDelivery: boolean
@@ -179,7 +235,7 @@ export interface StateSummary {
 export interface CreateShipmentRequest {
   orderId: number
   shippingStateId: number
-  carrier?: string
+  carrierId: number
   isCashOnDelivery?: boolean
   shippingCost?: number
   estimateDeliveryDate?: string
@@ -188,7 +244,7 @@ export interface CreateShipmentRequest {
 
 export interface UpdateShipmentRequest {
   shippingStateId: number
-  carrier?: string
+  carrierId: number
   isCashOnDelivery?: boolean
   shippingCost?: number
   estimateDeliveryDate?: string
@@ -197,6 +253,29 @@ export interface UpdateShipmentRequest {
 
 export interface AssignGuideRequest {
   guideNumber: string
+}
+
+// --- Ship order (marcar orden como enviada) ---
+export interface ShipOrderRequest {
+  carrierId: number
+  guideNumber: string
+  shippingStateId: number
+  isCashOnDelivery?: boolean
+  shippingCost?: number
+  estimateDeliveryDate?: string
+  weight?: number
+}
+
+export interface OrderShipmentResponse {
+  orderId: number
+  operationStateId: number
+  operationStateName: string
+  shipmentId: number
+  carrierId: number
+  carrierName: string
+  guideNumber: string | null
+  shippingStateId: number
+  shippingStateName: string
 }
 
 // --- States ---
@@ -210,7 +289,6 @@ export interface State {
 }
 
 export interface CreateStateRequest {
-  id: number
   name: string
   priority: number
   type?: string

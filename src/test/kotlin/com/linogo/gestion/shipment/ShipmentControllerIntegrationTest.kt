@@ -38,7 +38,7 @@ class ShipmentControllerIntegrationTest {
     @Test
     fun `should create shipment when request is valid`() {
         val request = CreateShipmentRequest(
-            orderId = 1L, shippingStateId = 1L, carrier = "Inter rapidisimo",
+            orderId = 1L, shippingStateId = 1L, carrierId = 1L,
             isCashOnDelivery = true, shippingCost = 5000L, weight = 2000L)
 
         mockMvc.perform(post("/api/shipments")
@@ -64,7 +64,7 @@ class ShipmentControllerIntegrationTest {
     @Test
     fun `should update shipment when request is valid`() {
         val request = UpdateShipmentRequest(
-            shippingStateId = 2L, carrier = "DHL", isCashOnDelivery = false)
+            shippingStateId = 2L, carrierId = 2L, isCashOnDelivery = false)
 
         mockMvc.perform(put("/api/shipments/1")
             .contentType(MediaType.APPLICATION_JSON)

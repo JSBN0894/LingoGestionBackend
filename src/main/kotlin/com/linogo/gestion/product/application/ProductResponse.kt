@@ -9,7 +9,7 @@ data class ProductResponse(
     val stock: Int,
     val imageUrl: String,
     val description: String,
-    val category: CategoryResponse?,
+    val category: CategoryResponse,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
 )

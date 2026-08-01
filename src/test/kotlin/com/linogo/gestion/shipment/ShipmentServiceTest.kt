@@ -1,5 +1,7 @@
 package com.linogo.gestion.shipment
 
+import com.linogo.gestion.carrier.domain.Carrier
+import com.linogo.gestion.carrier.infrastructure.CarrierRepository
 import com.linogo.gestion.order.domain.Order
 import com.linogo.gestion.order.infrastructure.OrderRepository
 import com.linogo.gestion.shipment.application.CreateShipmentRequest
@@ -41,12 +43,17 @@ class ShipmentServiceTest {
     @Mock
     private lateinit var trackingRepository: ShipmentTrackingRepository
 
+    @Mock
+    private lateinit var carrierRepository: CarrierRepository
+
     @InjectMocks
     private lateinit var shipmentService: ShipmentService
 
     private lateinit var state: State
     private lateinit var order: Order
     private lateinit var shippingState: ShipmentState
+    private lateinit var carrier: Carrier
+    private lateinit var otherCarrier: Carrier
     private lateinit var shipment: Shipment
     private lateinit var createRequest: CreateShipmentRequest
     private lateinit var updateRequest: UpdateShipmentRequest
@@ -60,17 +67,19 @@ class ShipmentServiceTest {
             createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
         shippingState = ShipmentState(id = 1L, state = state, name = "En preparación",
             createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
+        carrier = Carrier(id = 1L, name = "Inter rapidisimo", createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
+        otherCarrier = Carrier(id = 2L, name = "DHL", createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
 
-        shipment = Shipment(id = 1L, order = order, shippingState = shippingState, carrier = "Inter rapidisimo",
+        shipment = Shipment(id = 1L, order = order, shippingState = shippingState, carrier = carrier,
             isCashOnDelivery = true, shippingCost = 5000L, weight = 2000L,
             createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
 
         createRequest = CreateShipmentRequest(
-            orderId = 1L, shippingStateId = 1L, carrier = "Inter rapidisimo",
+            orderId = 1L, shippingStateId = 1L, carrierId = 1L,
             isCashOnDelivery = true, shippingCost = 5000L, weight = 2000L)
 
         updateRequest = UpdateShipmentRequest(
-            shippingStateId = 2L, carrier = "DHL", isCashOnDelivery = false,
+            shippingStateId = 2L, carrierId = 2L, isCashOnDelivery = false,
             shippingCost = 8000L, weight = 3000L)
     }
 
@@ -78,6 +87,7 @@ class ShipmentServiceTest {
     fun `create should save shipment when data is valid`() {
         `when`(orderRepository.findById(1L)).thenReturn(Optional.of(order))
         `when`(shipmentStateRepository.findById(1L)).thenReturn(Optional.of(shippingState))
+        `when`(carrierRepository.findById(1L)).thenReturn(Optional.of(carrier))
         `when`(shipmentRepository.save(any())).thenReturn(shipment)
         `when`(trackingRepository.save(any())).thenReturn(null)
 
@@ -85,7 +95,7 @@ class ShipmentServiceTest {
 
         assertNotNull(response)
         assertEquals(1L, response.orderId)
-        assertEquals("Inter rapidisimo", response.carrier)
+        assertEquals("Inter rapidisimo", response.carrierName)
         verify(orderRepository).findById(1L)
         verify(shipmentStateRepository).findById(1L)
         verify(shipmentRepository).save(any())
@@ -124,7 +134,7 @@ class ShipmentServiceTest {
 
         assertNotNull(response)
         assertEquals(1L, response.id)
-        assertEquals("Inter rapidisimo", response.carrier)
+        assertEquals("Inter rapidisimo", response.carrierName)
         verify(shipmentRepository).findById(1L)
     }
 
@@ -164,18 +174,19 @@ class ShipmentServiceTest {
     fun `update should return updated ShipmentResponse when exists`() {
         val updatedState = ShipmentState(id = 2L, state = state.copy(id = 2L, name = "En tránsito"), name = "En tránsito",
             createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
-        val updatedShipment = shipment.copy(shippingState = updatedState, carrier = "DHL", isCashOnDelivery = false,
+        val updatedShipment = shipment.copy(shippingState = updatedState, carrier = otherCarrier, isCashOnDelivery = false,
             shippingCost = 8000L, weight = 3000L)
 
         `when`(shipmentRepository.findById(1L)).thenReturn(Optional.of(shipment))
         `when`(shipmentStateRepository.findById(2L)).thenReturn(Optional.of(updatedState))
+        `when`(carrierRepository.findById(2L)).thenReturn(Optional.of(otherCarrier))
         `when`(shipmentRepository.save(any())).thenReturn(updatedShipment)
         `when`(trackingRepository.save(any())).thenReturn(null)
 
         val response = shipmentService.update(1L, updateRequest)
 
         assertNotNull(response)
-        assertEquals("DHL", response.carrier)
+        assertEquals("DHL", response.carrierName)
         assertEquals(false, response.isCashOnDelivery)
         verify(shipmentRepository).findById(1L)
         verify(shipmentStateRepository).findById(2L)

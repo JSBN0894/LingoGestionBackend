@@ -27,8 +27,16 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Pagination } from '@/components/Pagination'
-import type { Order, CreateOrderRequest, UpdateOrderRequest, Customer } from '@/types/api'
-import { Plus, Pencil, Eye } from 'lucide-react'
+import type {
+  Order,
+  CreateOrderRequest,
+  UpdateOrderRequest,
+  Customer,
+  Carrier,
+  ShipmentState,
+  ShipOrderRequest,
+} from '@/types/api'
+import { Plus, Pencil, Eye, Truck } from 'lucide-react'
 import { toast } from 'sonner'
 
 const PAGE_SIZE = 20
@@ -42,6 +50,7 @@ export function OrdersPage() {
   const [viewOpen, setViewOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [shipOpen, setShipOpen] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [formData, setFormData] = useState<CreateOrderRequest>({
     customerId: 0,
@@ -52,6 +61,14 @@ export function OrdersPage() {
     orderPhone: '',
     orderCity: '',
     observation: '',
+  })
+  const [carriers, setCarriers] = useState<Carrier[]>([])
+  const [shipmentStates, setShipmentStates] = useState<ShipmentState[]>([])
+  const [shipFormData, setShipFormData] = useState<ShipOrderRequest>({
+    carrierId: 0,
+    guideNumber: '',
+    shippingStateId: 0,
+    isCashOnDelivery: true,
   })
 
   const fetchOrders = useCallback(async () => {
@@ -84,11 +101,31 @@ export function OrdersPage() {
     }
   }, [])
 
+  const fetchCarriers = useCallback(async () => {
+    try {
+      const { data } = await api.get<Carrier[]>('/carriers')
+      setCarriers(Array.isArray(data) ? data : [])
+    } catch {
+      // Carriers might not be accessible for this role
+    }
+  }, [])
+
+  const fetchShipmentStates = useCallback(async () => {
+    try {
+      const { data } = await api.get<ShipmentState[]>('/shipment-states')
+      setShipmentStates(Array.isArray(data) ? data : [])
+    } catch {
+      // Shipment states might not be accessible for this role
+    }
+  }, [])
+
   useEffect(() => {
     fetchOrders()
     fetchStates()
     fetchCustomers()
-  }, [fetchOrders, fetchStates, fetchCustomers])
+    fetchCarriers()
+    fetchShipmentStates()
+  }, [fetchOrders, fetchStates, fetchCustomers, fetchCarriers, fetchShipmentStates])
 
   // Extract unique states from loaded orders for the select dropdown
   const uniqueStates = Array.from(
@@ -158,6 +195,29 @@ export function OrdersPage() {
   const openView = (order: Order) => {
     setSelectedOrder(order)
     setViewOpen(true)
+  }
+
+  const openShip = (order: Order) => {
+    setSelectedOrder(order)
+    setShipFormData({
+      carrierId: carriers[0]?.id ?? 0,
+      guideNumber: '',
+      shippingStateId: shipmentStates[0]?.id ?? 0,
+      isCashOnDelivery: true,
+    })
+    setShipOpen(true)
+  }
+
+  const handleShip = async () => {
+    if (!selectedOrder) return
+    try {
+      await api.patch(`/orders/${selectedOrder.id}/ship`, shipFormData)
+      toast.success('Order marked as shipped')
+      setShipOpen(false)
+      fetchOrders()
+    } catch {
+      toast.error('Failed to mark order as shipped')
+    }
   }
 
   const formatPrice = (value: number) =>
@@ -298,6 +358,9 @@ export function OrdersPage() {
                     <Button variant="ghost" size="icon" onClick={() => openEdit(order)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
+                    <Button variant="ghost" size="icon" onClick={() => openShip(order)} title="Mark as shipped">
+                      <Truck className="h-4 w-4" />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -375,6 +438,69 @@ export function OrdersPage() {
               Cancel
             </Button>
             <Button onClick={handleEdit}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ship Dialog: crea/actualiza el Shipment y mueve la orden a "Enviado" en un solo paso */}
+      <Dialog open={shipOpen} onOpenChange={setShipOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Mark Order #{selectedOrder?.id} as Shipped</DialogTitle>
+            <DialogDescription>
+              Sets the carrier and guide number, and moves the order to the "Enviado" state.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Carrier</label>
+              <Select
+                value={shipFormData.carrierId?.toString() ?? ''}
+                onValueChange={(v) => setShipFormData({ ...shipFormData, carrierId: Number(v) })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select carrier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {carriers.map((c) => (
+                    <SelectItem key={c.id} value={c.id.toString()}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Shipping State</label>
+              <Select
+                value={shipFormData.shippingStateId?.toString() ?? ''}
+                onValueChange={(v) => setShipFormData({ ...shipFormData, shippingStateId: Number(v) })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select shipping state" />
+                </SelectTrigger>
+                <SelectContent>
+                  {shipmentStates.map((s) => (
+                    <SelectItem key={s.id} value={s.id.toString()}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Guide Number</label>
+              <Input
+                value={shipFormData.guideNumber}
+                onChange={(e) => setShipFormData({ ...shipFormData, guideNumber: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShipOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleShip}>Mark as Shipped</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -5,6 +5,7 @@ import com.linogo.gestion.shipmentstate.application.ShipmentStateService
 import com.linogo.gestion.shipmentstate.domain.ShipmentState
 import com.linogo.gestion.shipmentstate.infrastructure.ShipmentStateRepository
 import com.linogo.gestion.state.domain.State
+import com.linogo.gestion.state.infrastructure.StateRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -18,12 +19,16 @@ import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import java.time.LocalDateTime
+import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
 class ShipmentStateServiceTest {
 
     @Mock
     private lateinit var repository: ShipmentStateRepository
+
+    @Mock
+    private lateinit var stateRepository: StateRepository
 
     @InjectMocks
     private lateinit var shipmentStateService: ShipmentStateService
@@ -40,12 +45,12 @@ class ShipmentStateServiceTest {
         shipmentState = ShipmentState(id = 1L, state = state, name = "En espera",
             createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
 
-        createRequest = CreateShipmentStateRequest(id = 1L, stateId = 1L, name = "En espera")
-        createRequest.setState(state)
+        createRequest = CreateShipmentStateRequest(stateId = 1L, name = "En espera")
     }
 
     @Test
     fun `create should save shipment state when data is valid`() {
+        `when`(stateRepository.findById(1L)).thenReturn(Optional.of(state))
         `when`(repository.save(any())).thenReturn(shipmentState)
 
         val response = shipmentStateService.create(createRequest)

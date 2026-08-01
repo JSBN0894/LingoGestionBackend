@@ -22,7 +22,8 @@ const mockUser: User = {
   username: 'admin',
   email: 'admin@linogo.com',
   fullName: 'Admin User',
-  role: 'ADMIN',
+  roles: [{ id: 1, name: 'Administrador' }],
+  permissions: ['USERS_MANAGE'],
   isEnabled: true,
 }
 

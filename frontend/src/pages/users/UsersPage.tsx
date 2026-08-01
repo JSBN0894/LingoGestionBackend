@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
   TableBody,
@@ -18,33 +19,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import type { User, CreateUserRequest } from '@/types/api'
-import { Plus, Pencil, Trash2, Power } from 'lucide-react'
+import type { User, CreateUserRequest, Role } from '@/types/api'
+import { Plus, Pencil, Trash2, Power, KeyRound } from 'lucide-react'
 import { toast } from 'sonner'
-
-const ROLES = ['ADMIN', 'VENTAS', 'PRODUCCION', 'LOGISTICA', 'USER']
 
 export function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
+  const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
   const [createOpen, setCreateOpen] = useState(false)
-  const [editRoleOpen, setEditRoleOpen] = useState(false)
+  const [editRolesOpen, setEditRolesOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [resetPasswordOpen, setResetPasswordOpen] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [editingRoleIds, setEditingRoleIds] = useState<number[]>([])
   const [formData, setFormData] = useState<CreateUserRequest>({
     fullName: '',
     username: '',
     email: '',
     password: '',
-    role: 'USER',
+    roleIds: [],
   })
 
   const fetchUsers = useCallback(async () => {
@@ -58,15 +55,28 @@ export function UsersPage() {
     }
   }, [])
 
+  const fetchRoles = useCallback(async () => {
+    try {
+      const { data } = await api.get<Role[]>('/admin/roles')
+      setRoles(data)
+    } catch {
+      toast.error('Failed to load roles')
+    }
+  }, [])
+
   useEffect(() => {
     fetchUsers()
-  }, [fetchUsers])
+    fetchRoles()
+  }, [fetchUsers, fetchRoles])
+
+  const toggleRoleId = (roleIds: number[], roleId: number): number[] =>
+    roleIds.includes(roleId) ? roleIds.filter((id) => id !== roleId) : [...roleIds, roleId]
 
   const handleCreate = async () => {
     try {
       await api.post('/admin/users', formData)
       setCreateOpen(false)
-      setFormData({ fullName: '', username: '', email: '', password: '', role: 'USER' })
+      setFormData({ fullName: '', username: '', email: '', password: '', roleIds: [] })
       await fetchUsers()
       toast.success('User created successfully')
     } catch (err: unknown) {
@@ -81,15 +91,16 @@ export function UsersPage() {
     }
   }
 
-  const handleRoleChange = async () => {
+  const handleRolesChange = async () => {
     if (!selectedUser) return
     try {
-      await api.patch(`/admin/users/${selectedUser.id}/role`, { role: selectedUser.role })
-      toast.success('Role updated')
-      setEditRoleOpen(false)
+      await api.put(`/admin/users/${selectedUser.id}/roles`, { roleIds: editingRoleIds })
+      toast.success('Roles updated')
+      setEditRolesOpen(false)
       fetchUsers()
-    } catch {
-      toast.error('Failed to update role')
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } }
+      toast.error(axiosErr.response?.data?.message ?? 'Failed to update roles')
     }
   }
 
@@ -98,8 +109,9 @@ export function UsersPage() {
       await api.patch(`/admin/users/${user.id}/status`)
       toast.success(`User ${user.isEnabled ? 'disabled' : 'enabled'}`)
       fetchUsers()
-    } catch {
-      toast.error('Failed to toggle status')
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } }
+      toast.error(axiosErr.response?.data?.message ?? 'Failed to toggle status')
     }
   }
 
@@ -124,6 +136,28 @@ export function UsersPage() {
     }
   }
 
+  const handleResetPassword = async () => {
+    if (!selectedUser) return
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match')
+      return
+    }
+    if (newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters')
+      return
+    }
+    try {
+      await api.patch(`/admin/users/${selectedUser.id}/password`, { newPassword })
+      toast.success(`Password reset for ${selectedUser.username}`)
+      setResetPasswordOpen(false)
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } }
+      toast.error(axiosErr.response?.data?.message ?? 'Failed to reset password')
+    }
+  }
+
   if (loading) return <div className="text-muted-foreground">Loading users...</div>
 
   return (
@@ -143,7 +177,7 @@ export function UsersPage() {
               <TableHead>Username</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Full Name</TableHead>
-              <TableHead>Role</TableHead>
+              <TableHead>Roles</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -155,7 +189,17 @@ export function UsersPage() {
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.fullName}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">{user.role}</Badge>
+                  <div className="flex flex-wrap gap-1">
+                    {user.roles.length === 0 ? (
+                      <span className="text-xs text-muted-foreground">No roles</span>
+                    ) : (
+                      user.roles.map((role) => (
+                        <Badge key={role.id} variant="outline">
+                          {role.name}
+                        </Badge>
+                      ))
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <Badge variant={user.isEnabled ? 'default' : 'destructive'}>
@@ -169,9 +213,10 @@ export function UsersPage() {
                       size="icon"
                       onClick={() => {
                         setSelectedUser(user)
-                        setEditRoleOpen(true)
+                        setEditingRoleIds(user.roles.map((r) => r.id))
+                        setEditRolesOpen(true)
                       }}
-                      title="Change role"
+                      title="Change roles"
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -182,6 +227,19 @@ export function UsersPage() {
                       title={user.isEnabled ? 'Disable' : 'Enable'}
                     >
                       <Power className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setSelectedUser(user)
+                        setNewPassword('')
+                        setConfirmPassword('')
+                        setResetPasswordOpen(true)
+                      }}
+                      title="Reset password"
+                    >
+                      <KeyRound className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -241,22 +299,23 @@ export function UsersPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Role</label>
-              <Select
-                value={formData.role}
-                onValueChange={(v) => setFormData({ ...formData, role: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLES.map((role) => (
-                    <SelectItem key={role} value={role}>
-                      {role}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium">Roles</label>
+              <div className="space-y-2 rounded-md border p-3">
+                {roles.length === 0 && (
+                  <p className="text-xs text-muted-foreground">No roles exist yet. Create one from Roles & Permissions.</p>
+                )}
+                {roles.map((role) => (
+                  <label key={role.id} className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={formData.roleIds.includes(role.id)}
+                      onCheckedChange={() =>
+                        setFormData({ ...formData, roleIds: toggleRoleId(formData.roleIds, role.id) })
+                      }
+                    />
+                    {role.name}
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -268,33 +327,67 @@ export function UsersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Role Dialog */}
-      <Dialog open={editRoleOpen} onOpenChange={setEditRoleOpen}>
+      {/* Edit Roles Dialog */}
+      <Dialog open={editRolesOpen} onOpenChange={setEditRolesOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Change Role</DialogTitle>
-            <DialogDescription>Update role for {selectedUser?.username}.</DialogDescription>
+            <DialogTitle>Change Roles</DialogTitle>
+            <DialogDescription>Update roles for {selectedUser?.username}.</DialogDescription>
           </DialogHeader>
-          <Select
-            value={selectedUser?.role ?? ''}
-            onValueChange={(v) => setSelectedUser((prev) => (prev ? { ...prev, role: v } : null))}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ROLES.map((role) => (
-                <SelectItem key={role} value={role}>
-                  {role}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="space-y-2 rounded-md border p-3">
+            {roles.map((role) => (
+              <label key={role.id} className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={editingRoleIds.includes(role.id)}
+                  onCheckedChange={() => setEditingRoleIds((prev) => toggleRoleId(prev, role.id))}
+                />
+                {role.name}
+              </label>
+            ))}
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditRoleOpen(false)}>
+            <Button variant="outline" onClick={() => setEditRolesOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleRoleChange}>Update</Button>
+            <Button onClick={handleRolesChange}>Update</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={resetPasswordOpen} onOpenChange={setResetPasswordOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for {selectedUser?.username}. This will sign them out of all active sessions.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">New Password</label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Confirm New Password</label>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetPasswordOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleResetPassword}>Reset Password</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

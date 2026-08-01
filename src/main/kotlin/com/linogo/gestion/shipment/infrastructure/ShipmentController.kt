@@ -1,8 +1,8 @@
 package com.linogo.gestion.shipment.infrastructure
 
-import com.linogo.gestion.security.config.AdminOnly
 import com.linogo.gestion.security.config.Authenticated
-import com.linogo.gestion.security.config.LogisticaOnly
+import com.linogo.gestion.security.config.RequiresPermission
+import com.linogo.gestion.security.domain.Permission
 import com.linogo.gestion.shipment.application.AssignGuideRequest
 import com.linogo.gestion.shipment.application.CreateShipmentRequest
 import com.linogo.gestion.shipment.application.ShipmentService
@@ -19,7 +19,7 @@ class ShipmentController(
 ) {
 
     @PostMapping
-    @LogisticaOnly
+    @RequiresPermission(Permission.SHIPMENTS_MANAGE)
     fun create(@Valid @RequestBody request: CreateShipmentRequest): ResponseEntity<Any> {
         val response = shipmentService.create(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
@@ -40,7 +40,7 @@ class ShipmentController(
     }
 
     @PutMapping("/{id}")
-    @LogisticaOnly
+    @RequiresPermission(Permission.SHIPMENTS_MANAGE)
     fun update(
         @PathVariable id: Long,
         @Valid @RequestBody request: UpdateShipmentRequest
@@ -50,14 +50,14 @@ class ShipmentController(
     }
 
     @DeleteMapping("/{id}")
-    @AdminOnly
+    @RequiresPermission(Permission.SHIPMENTS_DELETE)
     fun delete(@PathVariable id: Long): ResponseEntity<Void> {
         shipmentService.delete(id)
         return ResponseEntity.noContent().build()
     }
 
     @PatchMapping("/{id}/guide")
-    @LogisticaOnly
+    @RequiresPermission(Permission.SHIPMENTS_MANAGE)
     fun assignGuide(
         @PathVariable id: Long,
         @Valid @RequestBody request: AssignGuideRequest

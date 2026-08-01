@@ -21,7 +21,8 @@ const mockAdminUser: User = {
   username: 'admin',
   email: 'admin@linogo.com',
   fullName: 'Admin User',
-  role: 'ADMIN',
+  roles: [{ id: 1, name: 'Administrador' }],
+  permissions: ['DASHBOARD_VIEW', 'USERS_MANAGE', 'ROLES_MANAGE'],
   isEnabled: true,
 }
 
@@ -58,9 +59,9 @@ vi.mock('@/context/AuthContext', async (importOriginal) => {
   }
 })
 
-// We need to mock RoleGuard and AdminLayout since they have their own dependencies
-vi.mock('@/components/RoleGuard', () => ({
-  RoleGuard: ({ children }: { children: ReactNode }) => <>{children}</>,
+// We need to mock PermissionGuard and AdminLayout since they have their own dependencies
+vi.mock('@/components/PermissionGuard', () => ({
+  PermissionGuard: ({ children }: { children: ReactNode }) => <>{children}</>,
 }))
 
 vi.mock('@/components/AdminLayout', () => ({
@@ -73,6 +74,10 @@ vi.mock('@/pages/DashboardPage', () => ({
 
 vi.mock('@/pages/users/UsersPage', () => ({
   UsersPage: () => <div data-testid="users-page">Users</div>,
+}))
+
+vi.mock('@/pages/roles/RolesPage', () => ({
+  RolesPage: () => <div data-testid="roles-page">Roles</div>,
 }))
 
 vi.mock('@/pages/products/ProductsPage', () => ({

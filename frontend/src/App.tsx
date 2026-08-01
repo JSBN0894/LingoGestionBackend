@@ -1,17 +1,20 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
-import { RoleGuard } from './components/RoleGuard'
+import { PermissionGuard } from './components/PermissionGuard'
 import { AdminLayout } from './components/AdminLayout'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { UsersPage } from './pages/users/UsersPage'
+import { RolesPage } from './pages/roles/RolesPage'
 import { ProductsPage } from './pages/products/ProductsPage'
 import { CategoriesPage } from './pages/categories/CategoriesPage'
 import { CustomersPage } from './pages/customers/CustomersPage'
 import { OrdersPage } from './pages/orders/OrdersPage'
 import { ShipmentsPage } from './pages/shipments/ShipmentsPage'
+import { CarriersPage } from './pages/carriers/CarriersPage'
 import { StatesPage } from './pages/states/StatesPage'
 import { AuditLogPage } from './pages/audit/AuditLogPage'
+import { PAGE_PERMISSIONS } from './lib/permissions'
 
 function App() {
   return (
@@ -24,11 +27,11 @@ function App() {
         path="/admin/dashboard"
         element={
           <ProtectedRoute>
-            <RoleGuard requiredRoles={['ADMIN']}>
+            <PermissionGuard anyOf={PAGE_PERMISSIONS['/admin/dashboard']}>
               <AdminLayout>
                 <DashboardPage />
               </AdminLayout>
-            </RoleGuard>
+            </PermissionGuard>
           </ProtectedRoute>
         }
       />
@@ -37,11 +40,24 @@ function App() {
         path="/admin/users"
         element={
           <ProtectedRoute>
-            <RoleGuard requiredRoles={['ADMIN']}>
+            <PermissionGuard anyOf={PAGE_PERMISSIONS['/admin/users']}>
               <AdminLayout>
                 <UsersPage />
               </AdminLayout>
-            </RoleGuard>
+            </PermissionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/roles"
+        element={
+          <ProtectedRoute>
+            <PermissionGuard anyOf={PAGE_PERMISSIONS['/admin/roles']}>
+              <AdminLayout>
+                <RolesPage />
+              </AdminLayout>
+            </PermissionGuard>
           </ProtectedRoute>
         }
       />
@@ -50,11 +66,11 @@ function App() {
         path="/admin/products"
         element={
           <ProtectedRoute>
-            <RoleGuard requiredRoles={['ADMIN', 'PRODUCCION', 'VENTAS']}>
+            <PermissionGuard anyOf={PAGE_PERMISSIONS['/admin/products']}>
               <AdminLayout>
                 <ProductsPage />
               </AdminLayout>
-            </RoleGuard>
+            </PermissionGuard>
           </ProtectedRoute>
         }
       />
@@ -63,11 +79,11 @@ function App() {
         path="/admin/categories"
         element={
           <ProtectedRoute>
-            <RoleGuard requiredRoles={['ADMIN']}>
+            <PermissionGuard anyOf={PAGE_PERMISSIONS['/admin/categories']}>
               <AdminLayout>
                 <CategoriesPage />
               </AdminLayout>
-            </RoleGuard>
+            </PermissionGuard>
           </ProtectedRoute>
         }
       />
@@ -76,11 +92,11 @@ function App() {
         path="/admin/customers"
         element={
           <ProtectedRoute>
-            <RoleGuard requiredRoles={['ADMIN', 'VENTAS']}>
+            <PermissionGuard anyOf={PAGE_PERMISSIONS['/admin/customers']}>
               <AdminLayout>
                 <CustomersPage />
               </AdminLayout>
-            </RoleGuard>
+            </PermissionGuard>
           </ProtectedRoute>
         }
       />
@@ -89,11 +105,11 @@ function App() {
         path="/admin/orders"
         element={
           <ProtectedRoute>
-            <RoleGuard requiredRoles={['ADMIN', 'VENTAS']}>
+            <PermissionGuard anyOf={PAGE_PERMISSIONS['/admin/orders']}>
               <AdminLayout>
                 <OrdersPage />
               </AdminLayout>
-            </RoleGuard>
+            </PermissionGuard>
           </ProtectedRoute>
         }
       />
@@ -102,11 +118,24 @@ function App() {
         path="/admin/shipments"
         element={
           <ProtectedRoute>
-            <RoleGuard requiredRoles={['ADMIN', 'LOGISTICA']}>
+            <PermissionGuard anyOf={PAGE_PERMISSIONS['/admin/shipments']}>
               <AdminLayout>
                 <ShipmentsPage />
               </AdminLayout>
-            </RoleGuard>
+            </PermissionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/carriers"
+        element={
+          <ProtectedRoute>
+            <PermissionGuard anyOf={PAGE_PERMISSIONS['/admin/carriers']}>
+              <AdminLayout>
+                <CarriersPage />
+              </AdminLayout>
+            </PermissionGuard>
           </ProtectedRoute>
         }
       />
@@ -115,11 +144,11 @@ function App() {
         path="/admin/states"
         element={
           <ProtectedRoute>
-            <RoleGuard requiredRoles={['ADMIN']}>
+            <PermissionGuard anyOf={PAGE_PERMISSIONS['/admin/states']}>
               <AdminLayout>
                 <StatesPage />
               </AdminLayout>
-            </RoleGuard>
+            </PermissionGuard>
           </ProtectedRoute>
         }
       />
@@ -128,11 +157,11 @@ function App() {
         path="/admin/audit"
         element={
           <ProtectedRoute>
-            <RoleGuard requiredRoles={['ADMIN']}>
+            <PermissionGuard anyOf={PAGE_PERMISSIONS['/admin/audit']}>
               <AdminLayout>
                 <AuditLogPage />
               </AdminLayout>
-            </RoleGuard>
+            </PermissionGuard>
           </ProtectedRoute>
         }
       />

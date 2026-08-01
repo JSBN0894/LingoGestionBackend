@@ -31,7 +31,6 @@ export function StatesPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [selectedState, setSelectedState] = useState<State | null>(null)
   const [formData, setFormData] = useState<CreateStateRequest>({
-    id: 0,
     name: '',
     priority: 0,
     type: 'OPERATION',
@@ -52,7 +51,7 @@ export function StatesPage() {
     fetchStates()
   }, [fetchStates])
 
-  const resetForm = () => setFormData({ id: 0, name: '', priority: 0, type: 'OPERATION' })
+  const resetForm = () => setFormData({ name: '', priority: 0, type: 'OPERATION' })
 
   const handleCreate = async () => {
     try {
@@ -98,7 +97,7 @@ export function StatesPage() {
 
   const openEdit = (state: State) => {
     setSelectedState(state)
-    setFormData({ id: state.id, name: state.name, priority: state.priority, type: state.type })
+    setFormData({ name: state.name, priority: state.priority, type: state.type })
     setEditOpen(true)
   }
 
@@ -117,42 +116,6 @@ export function StatesPage() {
       </div>
     )
   }
-
-  const StateForm = () => (
-    <div className="space-y-4">
-      <div>
-        <label className="text-sm font-medium">ID</label>
-        <Input
-          type="number"
-          value={formData.id}
-          onChange={(e) => setFormData({ ...formData, id: Number(e.target.value) })}
-          disabled={!!selectedState}
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium">Name</label>
-        <Input
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium">Priority</label>
-        <Input
-          type="number"
-          value={formData.priority}
-          onChange={(e) => setFormData({ ...formData, priority: Number(e.target.value) })}
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium">Type</label>
-        <Input
-          value={formData.type ?? 'OPERATION'}
-          onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-        />
-      </div>
-    </div>
-  )
 
   return (
     <div className="space-y-6">
@@ -212,7 +175,30 @@ export function StatesPage() {
             <DialogTitle>Create State</DialogTitle>
             <DialogDescription>Add a new state.</DialogDescription>
           </DialogHeader>
-          <StateForm />
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Name</label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Priority</label>
+              <Input
+                type="number"
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: Number(e.target.value) })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Type</label>
+              <Input
+                value={formData.type ?? 'OPERATION'}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              />
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setCreateOpen(false); resetForm() }}>
               Cancel
@@ -228,7 +214,30 @@ export function StatesPage() {
           <DialogHeader>
             <DialogTitle>Edit State</DialogTitle>
           </DialogHeader>
-          <StateForm />
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Name</label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Priority</label>
+              <Input
+                type="number"
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: Number(e.target.value) })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Type</label>
+              <Input
+                value={formData.type ?? 'OPERATION'}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              />
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setEditOpen(false); resetForm() }}>
               Cancel

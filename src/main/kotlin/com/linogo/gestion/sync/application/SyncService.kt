@@ -41,8 +41,8 @@ class SyncService(
 
         return SyncStatesResponse(
             version = version,
-            states = states.map { StateSyncResponse(it.id, it.name, it.priority) },
-            shipmentStates = shipmentStates.map { ShipmentStateSyncResponse(it.id, it.name, it.state.priority) }
+            states = states.map { StateSyncResponse(it.id!!, it.name, it.priority) },
+            shipmentStates = shipmentStates.map { ShipmentStateSyncResponse(it.id!!, it.name, it.state.priority) }
         )
     }
 
@@ -74,14 +74,14 @@ private fun ProductEntity.toSyncResponse(): ProductSyncResponse {
         stock = this.stock,
         imageUrl = this.imageUrl,
         description = this.description,
-        categoryId = this.category?.id,
-        categoryName = this.category?.name
+        categoryId = this.category.id!!,
+        categoryName = this.category.name
     )
 }
 
 private fun Category.toSyncResponse(): CategorySyncResponse {
     return CategorySyncResponse(
-        id = this.id,
+        id = this.id!!,
         name = this.name,
         parentId = this.parent?.id
     )

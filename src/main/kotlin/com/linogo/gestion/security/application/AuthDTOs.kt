@@ -37,6 +37,15 @@ data class RefreshTokenRequest(
     val refreshToken: String
 )
 
+data class ChangePasswordRequest(
+    @field:NotBlank(message = "La contraseña actual es requerida")
+    val currentPassword: String,
+
+    @field:NotBlank(message = "La nueva contraseña es requerida")
+    @field:Size(min = 8, max = 100, message = "La nueva contraseña debe tener entre 8 y 100 caracteres")
+    val newPassword: String
+)
+
 data class AuthResponse(
     val accessToken: String,
     val refreshToken: String,
@@ -45,12 +54,18 @@ data class AuthResponse(
     val user: UserResponse
 )
 
+data class RoleSummary(
+    val id: Long,
+    val name: String
+)
+
 data class UserResponse(
     val id: String,
     val username: String,
     val email: String,
     val fullName: String,
-    val role: String,
+    val roles: List<RoleSummary>,
+    val permissions: List<String>,
     val isEnabled: Boolean = true
 )
 
@@ -59,6 +74,7 @@ data class UserMeResponse(
     val username: String,
     val email: String,
     val fullName: String,
-    val role: String,
+    val roles: List<RoleSummary>,
+    val permissions: List<String>,
     val isEnabled: Boolean
 )

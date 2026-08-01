@@ -66,3 +66,7 @@ gestion/
 # Frontend (admin panel) — source kept, build artifacts ignored
 frontend/node_modules/
 frontend/dist/
+frontend/tsconfig.tsbuildinfo
+
+# Frontend build output copied into the Spring static resources by Gradle
+src/main/resources/static/

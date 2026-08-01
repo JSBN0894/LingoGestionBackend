@@ -4,7 +4,6 @@ import com.linogo.gestion.security.application.LoginRequest
 import com.linogo.gestion.security.application.RefreshTokenRequest
 import com.linogo.gestion.security.application.RegisterRequest
 import com.linogo.gestion.security.domain.RefreshToken
-import com.linogo.gestion.security.domain.Role
 import com.linogo.gestion.security.domain.User
 import com.linogo.gestion.security.infrastructure.JwtTokenProvider
 import com.linogo.gestion.security.infrastructure.RefreshTokenRepository
@@ -23,6 +22,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -50,6 +50,9 @@ class AuthServiceTest {
     @Mock
     private lateinit var userDetailsService: CustomUserDetailsService
 
+    @Mock
+    private lateinit var jdbcTemplate: JdbcTemplate
+
     private lateinit var authService: AuthService
 
     private lateinit var user: User
@@ -66,6 +69,7 @@ class AuthServiceTest {
             userRepository = userRepository,
             refreshTokenRepository = refreshTokenRepository,
             userDetailsService = userDetailsService,
+            jdbcTemplate = jdbcTemplate,
             maxAttempts = 5,
             windowMinutes = 1L
         )
@@ -75,7 +79,7 @@ class AuthServiceTest {
             email = "test@example.com",
             password = "encoded_password",
             fullName = "Test User",
-            role = Role.USER,
+            roles = mutableSetOf(),
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()
         )
@@ -190,13 +194,13 @@ class AuthServiceTest {
         `when`(jwtTokenProvider.generateAccessToken(user)).thenReturn("new_access_token")
         `when`(jwtTokenProvider.generateRefreshToken(user)).thenReturn("new_refresh_token")
         `when`(jwtTokenProvider.getAccessTokenExpirationMs()).thenReturn(900000L)
+        `when`(jwtTokenProvider.getRefreshTokenExpirationMs()).thenReturn(604800000L)
 
         val response = authService.refreshToken("valid_refresh_token")
 
         assertNotNull(response)
         assertEquals("new_access_token", response.accessToken)
         assertEquals("new_refresh_token", response.refreshToken)
-        verify(refreshTokenRepository).delete(refreshToken)
     }
 
     @Test
@@ -212,8 +216,8 @@ class AuthServiceTest {
 
     @Test
     fun `refreshToken should throw IllegalArgumentException when token is revoked`() {
-        val revokedToken = refreshToken.copy(isRevoked = true)
-        `when`(refreshTokenRepository.findByToken("revoked_token")).thenReturn(revokedToken)
+        val revoked = refreshToken.copy(isRevoked = true)
+        `when`(refreshTokenRepository.findByToken("revoked_token")).thenReturn(revoked)
 
         val exception = assertThrows(IllegalArgumentException::class.java) {
             authService.refreshToken("revoked_token")
@@ -224,33 +228,27 @@ class AuthServiceTest {
 
     @Test
     fun `refreshToken should throw IllegalArgumentException when token is expired`() {
-        val expiredToken = refreshToken.copy(expiryDate = Instant.now().minusSeconds(3600))
-        `when`(refreshTokenRepository.findByToken("expired_token")).thenReturn(expiredToken)
+        val expired = refreshToken.copy(expiryDate = Instant.now().minusSeconds(3600))
+        `when`(refreshTokenRepository.findByToken("expired_token")).thenReturn(expired)
 
         val exception = assertThrows(IllegalArgumentException::class.java) {
             authService.refreshToken("expired_token")
         }
 
         assertEquals("Refresh token expirado", exception.message)
-        verify(refreshTokenRepository).delete(expiredToken)
     }
 
     @Test
     fun `logout should revoke user tokens when user has refresh token`() {
-        `when`(refreshTokenRepository.findByUserId(any())).thenReturn(refreshToken)
-
         authService.logout("user_id")
 
-        verify(refreshTokenRepository).findByUserId(any())
-        verify(refreshTokenRepository).save(refreshToken)
+        verify(jdbcTemplate).update(org.mockito.kotlin.any<String>(), org.mockito.kotlin.any<String>())
     }
 
     @Test
     fun `logout should do nothing when user has no refresh token`() {
-        `when`(refreshTokenRepository.findByUserId(any())).thenReturn(null)
-
         authService.logout("user_id")
 
-        verify(refreshTokenRepository).findByUserId(any())
+        verify(jdbcTemplate).update(org.mockito.kotlin.any<String>(), org.mockito.kotlin.any<String>())
     }
 }

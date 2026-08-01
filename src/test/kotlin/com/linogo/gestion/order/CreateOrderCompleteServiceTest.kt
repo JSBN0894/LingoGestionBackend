@@ -1,5 +1,6 @@
 package com.linogo.gestion.order
 
+import com.linogo.gestion.category.domain.Category
 import com.linogo.gestion.customer.domain.Customer
 import com.linogo.gestion.customer.domain.CustomerRepository
 import com.linogo.gestion.order.application.CreateOrderCompleteRequest
@@ -51,6 +52,7 @@ class CreateOrderCompleteServiceTest {
 
     private lateinit var existingCustomer: Customer
     private lateinit var state: State
+    private lateinit var category: Category
     private lateinit var product: ProductEntity
     private lateinit var request: CreateOrderCompleteRequest
     private lateinit var savedOrder: Order
@@ -66,8 +68,10 @@ class CreateOrderCompleteServiceTest {
         state = State(id = 1L, name = "Pendiente", priority = 1,
             createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
 
+        category = Category(id = 1L, name = "Moldes")
+
         product = ProductEntity(id = 1L, name = "Molde Silicona", pricePerUnit = 15000L, stock = 10,
-            imageUrl = "img.jpg", description = "Molde de silicona",
+            imageUrl = "img.jpg", description = "Molde de silicona", category = category,
             createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
 
         savedOrder = Order(id = 1L, customerId = 123456789L, customerName = "Juan Pérez",

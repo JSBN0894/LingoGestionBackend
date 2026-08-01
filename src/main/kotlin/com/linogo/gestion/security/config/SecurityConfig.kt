@@ -1,5 +1,6 @@
 package com.linogo.gestion.security.config
 
+import com.linogo.gestion.security.domain.Permission
 import com.linogo.gestion.security.infrastructure.CookieJwtFilter
 import com.linogo.gestion.security.infrastructure.JwtAuthenticationFilter
 import org.springframework.context.annotation.Bean
@@ -105,12 +106,13 @@ class ApiSecurityConfig(
                     "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/v3/api-docs",
                     "/api-docs/**", "/api-docs", "/api-docs/swagger-config",
                     "/swagger-resources/**", "/webjars/**"
-                ).hasRole("ADMIN")
+                ).hasAuthority("PERM_${Permission.SYSTEM_DOCS_VIEW.code}")
 
                 auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 auth.anyRequest().authenticated()
             }
             .addFilterBefore(cookieJwtFilter, UsernamePasswordAuthenticationFilter::class.java)
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
             .headers { headers ->
                 headers
                     .cacheControl { cache -> cache.disable() }

@@ -171,6 +171,7 @@ export function CategoriesPage() {
             <div>
               <label className="text-sm font-medium">Parent Category (optional)</label>
               <Select
+                key={`create-parent-${createOpen}`}
                 value={formData.parentId?.toString() ?? 'none'}
                 onValueChange={(v) =>
                   setFormData({ ...formData, parentId: v !== 'none' ? Number(v) : undefined })
@@ -216,6 +217,7 @@ export function CategoriesPage() {
             <div>
               <label className="text-sm font-medium">Parent Category (optional)</label>
               <Select
+                key={`edit-parent-${editOpen}-${selectedCategory?.id}`}
                 value={formData.parentId?.toString() ?? 'none'}
                 onValueChange={(v) =>
                   setFormData({ ...formData, parentId: v !== 'none' ? Number(v) : undefined })
