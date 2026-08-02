@@ -5,14 +5,13 @@ import io.github.bucket4j.Bucket
 import com.linogo.gestion.security.application.AuthResponse
 import com.linogo.gestion.security.application.LoginRequest
 import com.linogo.gestion.security.application.RegisterRequest
-import com.linogo.gestion.security.application.UserResponse
-import com.linogo.gestion.security.domain.RefreshToken
-import com.linogo.gestion.security.domain.Role
+import com.linogo.gestion.security.application.toUserResponse
 import com.linogo.gestion.security.domain.User
 import com.linogo.gestion.security.infrastructure.JwtTokenProvider
 import com.linogo.gestion.security.infrastructure.RefreshTokenRepository
 import com.linogo.gestion.security.infrastructure.UserRepository
 import org.slf4j.LoggerFactory
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.BadCredentialsException
@@ -32,6 +31,7 @@ class AuthService(
     private val userRepository: UserRepository,
     private val refreshTokenRepository: RefreshTokenRepository,
     private val userDetailsService: CustomUserDetailsService,
+    private val jdbcTemplate: JdbcTemplate,
     @param:Value("\${app.rate-limit.login-attempts}") private val maxAttempts: Int,
     @param:Value("\${app.rate-limit.window-minutes}") private val windowMinutes: Long
 ) {
@@ -42,7 +42,6 @@ class AuthService(
     // 2. Tipar explícitamente <String, Bucket> para evitar el error de inferencia <K, V>
     private val loginAttempts: MutableMap<String, Bucket> = ConcurrentHashMap<String, Bucket>()
 
-    @Transactional
     fun login(request: LoginRequest, clientIp: String): AuthResponse {
         checkRateLimit(clientIp)
 
@@ -58,7 +57,7 @@ class AuthService(
         val user = userRepository.findByUsername(request.username)
             ?: throw BadCredentialsException("Usuario no encontrado")
 
-        if (!user.isEnabled) {
+        if (!user.isEnabled()) {
             throw BadCredentialsException("Usuario deshabilitado")
         }
 
@@ -91,8 +90,8 @@ class AuthService(
             email = request.email,
             password = passwordEncoder.encode(request.password!!),
             fullName = request.fullName,
-            role = Role.USER,
-            isEnabled = true
+            roles = mutableSetOf(),
+            _isEnabled = true
         )
 
         val savedUser = userRepository.save(user)
@@ -107,23 +106,27 @@ class AuthService(
         )
     }
 
-    @Transactional
     fun refreshToken(refreshToken: String): AuthResponse {
-        val refreshTokenEntity = refreshTokenRepository.findByToken(refreshToken)
+        // Via JPA (no reconstrucción manual desde SQL crudo): con roles
+        // muchos-a-muchos no hay forma sana de replicar ese join a mano, y
+        // RefreshToken.user ya viene hidratado con sus roles (EAGER).
+        val stored = refreshTokenRepository.findByToken(refreshToken)
             ?: throw IllegalArgumentException("Refresh token inválido")
 
-        if (refreshTokenEntity.isRevoked) {
-            revokeAllUserTokens(refreshTokenEntity.user.id!!)
+        val user = stored.user
+        val userId = user.id!!
+
+        if (stored.isRevoked) {
+            revokeAllUserTokens(userId)
             throw IllegalArgumentException("Refresh token revocado")
         }
 
-        if (refreshTokenEntity.expiryDate.isBefore(Instant.now())) {
-            refreshTokenRepository.delete(refreshTokenEntity)
+        if (stored.expiryDate.isBefore(Instant.now())) {
+            revokeAllUserTokens(userId)
             throw IllegalArgumentException("Refresh token expirado")
         }
 
-        val user = refreshTokenEntity.user
-        refreshTokenRepository.delete(refreshTokenEntity)
+        revokeAllUserTokens(userId)
         val newRefreshToken = createRefreshToken(user)
         val newAccessToken = jwtTokenProvider.generateAccessToken(user)
 
@@ -135,34 +138,29 @@ class AuthService(
         )
     }
 
-    @Transactional
     fun logout(userId: String) {
         revokeAllUserTokens(userId)
     }
 
     private fun createRefreshToken(user: User): String {
-        refreshTokenRepository.findByUserId(user.id!!)?.let {
-            refreshTokenRepository.delete(it)
-        }
-
+        val userId = user.id!!
         val refreshToken = jwtTokenProvider.generateRefreshToken(user)
-        val refreshTokenEntity = RefreshToken(
-            id = java.util.UUID.randomUUID().toString(),
-            user = user,
-            token = refreshToken,
-            expiryDate = Instant.now().plusMillis(jwtTokenProvider.getRefreshTokenExpirationMs()),
-            isRevoked = false
+        val expiryDate = Instant.now().plusMillis(jwtTokenProvider.getRefreshTokenExpirationMs())
+        val tokenUuid = java.util.UUID.randomUUID().toString()
+        
+        // Use JdbcTemplate to completely bypass Hibernate persistence context
+        jdbcTemplate.update("DELETE FROM refresh_tokens WHERE user_id = ?", userId)
+        jdbcTemplate.update(
+            "INSERT INTO refresh_tokens (id, user_id, token, expiry_date, is_revoked, created_at) " +
+            "VALUES (?, ?, ?, ?, false, NOW())",
+            tokenUuid, userId, refreshToken, java.sql.Timestamp.from(expiryDate)
         )
-
-        refreshTokenRepository.save(refreshTokenEntity)
+        
         return refreshToken
     }
 
     private fun revokeAllUserTokens(userId: String) {
-        refreshTokenRepository.findByUserId(userId)?.let {
-            it.isRevoked = true
-            refreshTokenRepository.save(it)
-        }
+        jdbcTemplate.update("UPDATE refresh_tokens SET is_revoked = true WHERE user_id = ?", userId)
     }
 
     // --- CORRECCIONES DE BUCKET4J 8.x ---
@@ -189,14 +187,4 @@ class AuthService(
             .addLimit(limit)
             .build()
     }
-}
-
-private fun User.toUserResponse(): UserResponse {
-    return UserResponse(
-        id = this.id ?: "",
-        username = this.username,
-        email = this.email,
-        fullName = this.fullName,
-        role = this.role.name
-    )
 }

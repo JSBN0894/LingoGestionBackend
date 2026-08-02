@@ -15,17 +15,12 @@ class CategoryService(
 
     @Transactional
     fun create(request: CreateCategoryRequest): CategoryResponse {
-        if (categoryRepository.existsById(request.id)) {
-            throw AlreadyExistsException("Category", "id", request.id)
-        }
-
         val parent = request.parentId?.let {
             categoryRepository.findById(it)
                 .orElseThrow { NotFoundException("Category", it) }
         }
 
         val category = Category(
-            id = request.id,
             name = request.name,
             parent = parent
         )
@@ -76,7 +71,7 @@ class CategoryService(
 
     private fun Category.toResponse(): CategoryResponse {
         return CategoryResponse(
-            id = this.id,
+            id = this.id!!,
             name = this.name,
             parentId = this.parent?.id,
             createdAt = this.createdAt,

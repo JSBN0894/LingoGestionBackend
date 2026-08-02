@@ -16,17 +16,15 @@ class ProductService(
 
     @Transactional
     fun create(request: CreateProductRequest): ProductResponse {
-        val category = request.categoryId?.let { id ->
-            categoryRepository.findById(id)
-                .orElseThrow { IllegalArgumentException("Category with id $id not found") }
-        }
+        val category = categoryRepository.findById(request.categoryId)
+            .orElseThrow { IllegalArgumentException("Category with id ${request.categoryId} not found") }
 
         val product = Product(
-            id = request.id,
+            id = 0,
             name = request.name,
             pricePerUnit = request.pricePerUnit,
             stock = request.stock,
-            imageUrl = request.imageUrl,
+            imageUrl = request.imageUrl ?: "",
             description = request.description,
             category = category
         )
@@ -61,16 +59,14 @@ class ProductService(
         val product = productRepository.findById(id)
             ?: throw IllegalArgumentException("Product with id $id not found")
 
-        val category = request.categoryId?.let { catId ->
-            categoryRepository.findById(catId)
-                .orElseThrow { IllegalArgumentException("Category with id $catId not found") }
-        }
+        val category = categoryRepository.findById(request.categoryId)
+            .orElseThrow { IllegalArgumentException("Category with id ${request.categoryId} not found") }
 
         val updated = product.copy(
             name = request.name,
             pricePerUnit = request.pricePerUnit,
             stock = request.stock,
-            imageUrl = request.imageUrl,
+            imageUrl = request.imageUrl ?: product.imageUrl,
             description = request.description,
             category = category,
             updatedAt = java.time.LocalDateTime.now()
@@ -98,7 +94,7 @@ class ProductService(
             stock = this.stock,
             imageUrl = this.imageUrl,
             description = this.description,
-            category = this.category?.let { CategoryResponse(it.id, it.name) },
+            category = CategoryResponse(this.category.id!!, this.category.name),
             createdAt = this.createdAt,
             updatedAt = this.updatedAt
         )

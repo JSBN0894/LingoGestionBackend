@@ -1,8 +1,12 @@
 package com.linogo.gestion.security.config
 
+import com.linogo.gestion.security.domain.Permission
+import com.linogo.gestion.security.infrastructure.CookieJwtFilter
 import com.linogo.gestion.security.infrastructure.JwtAuthenticationFilter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
+import org.springframework.core.annotation.Order
 import org.springframework.http.HttpMethod
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.ProviderManager
@@ -20,29 +24,66 @@ import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 
 @Configuration
+class CorsConfig {
+
+    @Bean
+    @Primary
+    fun corsConfigurationSource(): CorsConfigurationSource {
+        val configuration = CorsConfiguration().apply {
+            val allowedOriginsEnv = System.getenv("CORS_ALLOWED_ORIGINS")
+                ?: "https://tu-dominio.com,https://app.tu-dominio.com,android-app://com.linogo.app"
+
+            allowedOrigins = allowedOriginsEnv.split(",").map { it.trim() }
+
+            val isDev = System.getenv("SPRING_PROFILES_ACTIVE") == "dev"
+            if (isDev) {
+                allowedOriginPatterns = listOf(
+                    "http://localhost:*",
+                    "http://10.0.2.2:*",
+                    "http://127.0.0.1:*",
+                    "http://localhost:5173"
+                )
+            }
+
+            allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+            allowedHeaders = listOf(
+                "Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin",
+                "Access-Control-Request-Method", "Access-Control-Request-Headers", "X-CSRF-Token"
+            )
+            exposedHeaders = listOf(
+                "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials", "Authorization", "Set-Cookie"
+            )
+            allowCredentials = true
+            maxAge = 3600
+        }
+
+        val source = UrlBasedCorsConfigurationSource()
+        source.registerCorsConfiguration("/**", configuration)
+        return source
+    }
+}
+
+@Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
-class SecurityConfig(
-    private val jwtAuthenticationFilter: JwtAuthenticationFilter
+class ApiSecurityConfig(
+    private val jwtAuthenticationFilter: JwtAuthenticationFilter,
+    private val corsConfigurationSource: CorsConfigurationSource,
+    private val cookieJwtFilter: CookieJwtFilter
 ) {
 
     @Bean
-    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
+    @Order(2)
+    fun apiSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            // CSRF deshabilitado para API REST stateless
-            // CSRF no es necesario cuando se usa JWT en headers Authorization
             .csrf { csrf -> csrf.disable() }
-            
-            // CORS configurado correctamente
-            .cors { cors -> cors.configurationSource(corsConfigurationSource()) }
-            
-            // Manejo de excepciones
+            .cors { cors -> cors.configurationSource(corsConfigurationSource) }
             .exceptionHandling { exceptions ->
                 exceptions
                     .authenticationEntryPoint { request, response, authException ->
                         response.status = 401
                         response.contentType = "application/json"
-                        response.writer.write("""{"error": "Unauthorized", "message": "Autenticación requerida"}""")
+                        response.writer.write("""{"error": "Unauthorized", "message": "Autenticacion requerida"}""")
                     }
                     .accessDeniedHandler { request, response, accessDeniedException ->
                         response.status = 403
@@ -50,37 +91,39 @@ class SecurityConfig(
                         response.writer.write("""{"error": "Forbidden", "message": "Acceso denegado"}""")
                     }
             }
-            
-            // Sesión stateless - no se crea sesión HTTP
             .sessionManagement { session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             }
-            
-            // Autorizaciones
             .authorizeHttpRequests { auth ->
-                // Endpoints públicos
                 auth.requestMatchers(
                     "/api/auth/login",
                     "/api/auth/refresh",
-                    "/swagger-ui/**",
-                    "/v3/api-docs/**",
-                    "/swagger-resources/**",
-                    "/api/sync/**"
+                    "/api/sync/**",
+                    "/admin/**"
                 ).permitAll()
-                
-                // Requests OPTIONS para preflight CORS
+
+                auth.requestMatchers(
+                    "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/v3/api-docs",
+                    "/api-docs/**", "/api-docs", "/api-docs/swagger-config",
+                    "/swagger-resources/**", "/webjars/**"
+                ).hasAuthority("PERM_${Permission.SYSTEM_DOCS_VIEW.code}")
+
                 auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                
-                // Todo lo demás requiere autenticación
                 auth.anyRequest().authenticated()
             }
-            
-            // Filtro JWT antes del filtro de autenticación por username/password
+            .addFilterBefore(cookieJwtFilter, UsernamePasswordAuthenticationFilter::class.java)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
-            
-            // Deshabilitar cache para respuestas
             .headers { headers ->
-                headers.cacheControl { cache -> cache.disable() }
+                headers
+                    .cacheControl { cache -> cache.disable() }
+                    .httpStrictTransportSecurity { hsts ->
+                        hsts.maxAgeInSeconds(31536000).includeSubDomains(true)
+                    }
+                    .frameOptions { frame -> frame.deny() }
+                    .contentTypeOptions { }
+                    .contentSecurityPolicy { csp ->
+                        csp.policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;")
+                    }
             }
 
         return http.build()
@@ -99,44 +142,5 @@ class SecurityConfig(
             setUserDetailsService(userDetailsService)
         }
         return ProviderManager(authenticationProvider)
-    }
-
-    @Bean
-    fun corsConfigurationSource(): CorsConfigurationSource {
-        val configuration = CorsConfiguration().apply {
-            // Orígenes permitidos - configurar mediante variable de entorno en producción
-            val allowedOriginsEnv = System.getenv("CORS_ALLOWED_ORIGINS")
-                ?: "https://tu-dominio.com,https://app.tu-dominio.com,android-app://com.linogo.app"
-            
-            allowedOrigins = allowedOriginsEnv.split(",").map { it.trim() }
-            
-            // allowedOriginPatterns solo para desarrollo (no usar en producción)
-            val isDev = System.getenv("SPRING_PROFILES_ACTIVE") == "dev"
-            if (isDev) {
-                allowedOriginPatterns = listOf("http://localhost:*", "http://10.0.2.2:*", "http://127.0.0.1:*")
-            }
-            
-            allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
-            allowedHeaders = listOf(
-                "Authorization",
-                "Content-Type",
-                "X-Requested-With",
-                "Accept",
-                "Origin",
-                "Access-Control-Request-Method",
-                "Access-Control-Request-Headers"
-            )
-            exposedHeaders = listOf(
-                "Access-Control-Allow-Origin",
-                "Access-Control-Allow-Credentials",
-                "Authorization"
-            )
-            allowCredentials = true
-            maxAge = 3600 // 1 hora
-        }
-
-        val source = UrlBasedCorsConfigurationSource()
-        source.registerCorsConfiguration("/**", configuration)
-        return source
     }
 }

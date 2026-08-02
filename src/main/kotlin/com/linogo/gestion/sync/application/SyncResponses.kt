@@ -19,8 +19,8 @@ data class ProductSyncResponse(
     val stock: Int,
     val imageUrl: String,
     val description: String,
-    val categoryId: Long?,
-    val categoryName: String?
+    val categoryId: Long,
+    val categoryName: String
 )
 
 data class CategorySyncResponse(

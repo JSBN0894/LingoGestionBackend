@@ -1,6 +1,5 @@
 package com.linogo.gestion.security
 
-import com.linogo.gestion.security.domain.Role
 import com.linogo.gestion.security.domain.User
 import com.linogo.gestion.security.infrastructure.JwtAuthenticationFilter
 import com.linogo.gestion.security.infrastructure.JwtTokenProvider
@@ -52,7 +51,7 @@ class JwtAuthenticationFilterTest {
     @Test
     fun `doFilter should set authentication when valid access token is provided`() {
         val user = User(username = "testuser", email = "test@example.com",
-            password = "password", fullName = "Test User", role = Role.USER,
+            password = "password", fullName = "Test User", roles = mutableSetOf(),
             createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now())
 
         `when`(request.getHeader("Authorization")).thenReturn("Bearer valid_token")

@@ -28,9 +28,10 @@ class UploadController(
         val originalName = file.originalFilename ?: "unknown"
         val extension = originalName.substringAfterLast('.', "jpg")
         val safeName = "${Instant.now().toEpochMilli()}_${UUID.randomUUID().toString().take(8)}.$extension"
-        val targetPath = Paths.get(uploadDir, safeName)
+        val uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize()
+        val targetPath = uploadPath.resolve(safeName)
 
-        Files.createDirectories(targetPath.parent)
+        Files.createDirectories(uploadPath)
         file.transferTo(targetPath.toFile())
 
         val url = "/uploads/$safeName"

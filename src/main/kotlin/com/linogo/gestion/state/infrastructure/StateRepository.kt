@@ -5,4 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface StateRepository : JpaRepository<State, Long>
+interface StateRepository : JpaRepository<State, Long> {
+    fun findByNameIgnoreCase(name: String): State?
+}

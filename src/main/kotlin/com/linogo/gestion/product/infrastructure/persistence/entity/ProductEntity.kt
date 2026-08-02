@@ -8,7 +8,8 @@ import java.time.LocalDateTime
 @Table(name = "products")
 class ProductEntity(
     @Id
-    val id: Long,
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0,
 
     @Column(nullable = false)
     val name: String,
@@ -25,9 +26,9 @@ class ProductEntity(
     @Column(nullable = false, columnDefinition = "TEXT")
     val description: String,
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "category_id", foreignKey = ForeignKey(name = "fk_product_category"))
-    val category: Category? = null,
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "category_id", nullable = false, foreignKey = ForeignKey(name = "fk_product_category"))
+    val category: Category,
 
     @Column(nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

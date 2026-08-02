@@ -10,7 +10,7 @@ data class Product(
     val stock: Int,
     val imageUrl: String,
     val description: String,
-    val category: Category? = null,
+    val category: Category,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val updatedAt: LocalDateTime = LocalDateTime.now()
 )

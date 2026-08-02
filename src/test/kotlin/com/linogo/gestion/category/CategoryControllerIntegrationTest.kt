@@ -37,7 +37,7 @@ class CategoryControllerIntegrationTest {
 
     @Test
     fun `should create category when request is valid`() {
-        val request = CreateCategoryRequest(id = 1L, name = "Moldes", parentId = null)
+        val request = CreateCategoryRequest(name = "Moldes", parentId = null)
 
         mockMvc.perform(post("/api/categories")
             .contentType(MediaType.APPLICATION_JSON)

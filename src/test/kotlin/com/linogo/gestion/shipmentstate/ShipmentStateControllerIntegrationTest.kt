@@ -1,10 +1,10 @@
 package com.linogo.gestion.shipmentstate
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.linogo.gestion.shipmentstate.application.CreateShipmentStateRequest
 import com.linogo.gestion.shipmentstate.application.ShipmentStateService
 import com.linogo.gestion.security.infrastructure.JwtAuthenticationFilter
 import com.linogo.gestion.security.infrastructure.JwtTokenProvider
-import com.linogo.gestion.state.infrastructure.StateRepository
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -26,9 +26,6 @@ class ShipmentStateControllerIntegrationTest {
     private lateinit var service: ShipmentStateService
 
     @MockBean
-    private lateinit var stateRepository: StateRepository
-
-    @MockBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @MockBean
@@ -39,11 +36,7 @@ class ShipmentStateControllerIntegrationTest {
 
     @Test
     fun `should create shipment state when request is valid`() {
-        val request = mapOf("id" to 1, "stateId" to 1, "name" to "En espera")
-        org.mockito.Mockito.`when`(stateRepository.findById(1L))
-            .thenReturn(java.util.Optional.of(
-                com.linogo.gestion.state.domain.State(id = 1L, name = "Pendiente", priority = 1)
-            ))
+        val request = CreateShipmentStateRequest(stateId = 1L, name = "En espera")
 
         mockMvc.perform(post("/api/shipment-states")
             .contentType(MediaType.APPLICATION_JSON)

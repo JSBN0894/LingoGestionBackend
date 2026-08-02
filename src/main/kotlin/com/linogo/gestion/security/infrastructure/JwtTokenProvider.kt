@@ -55,10 +55,16 @@ class JwtTokenProvider(
         val now = Date()
         val expiryDate = Date(now.time + expirationMs)
 
+        // Antes se guardaba un claim "role" con user.authorities.first().authority,
+        // pero un usuario puede tener cero o muchos permisos ahora (roles
+        // dinamicos): .first() rompia con NoSuchElementException si no tenia
+        // ninguno, y volcar la lista completa desbordaba refresh_tokens.token
+        // (VARCHAR(500)) para usuarios con muchos permisos. La autorizacion
+        // real siempre se recalcula desde la BD en cada request (ver
+        // CustomUserDetailsService), asi que este claim no hace falta.
         return Jwts.builder()
             .setSubject(user.username)
             .claim("userId", (user as User).id)
-            .claim("role", user.authorities.first().authority)
             .claim("type", tokenType.name)
             .setIssuedAt(now)
             .setExpiration(expiryDate)

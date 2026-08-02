@@ -1,21 +1,26 @@
 package com.linogo.gestion.shipmentstate.application
 
+import com.linogo.gestion.exception.NotFoundException
 import com.linogo.gestion.shipmentstate.domain.ShipmentState
 import com.linogo.gestion.shipmentstate.infrastructure.ShipmentStateRepository
+import com.linogo.gestion.state.infrastructure.StateRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
 class ShipmentStateService(
-    private val repository: ShipmentStateRepository
+    private val repository: ShipmentStateRepository,
+    private val stateRepository: StateRepository
 ) {
 
     @Transactional
     fun create(request: CreateShipmentStateRequest): ShipmentStateResponse {
+        val state = stateRepository.findById(request.stateId)
+            .orElseThrow { NotFoundException("State", request.stateId) }
+
         val shipmentState = ShipmentState(
-            id = request.id,
-            state = request.state,
+            state = state,
             name = request.name,
             updatedAt = LocalDateTime.now()
         )
@@ -37,8 +42,8 @@ class ShipmentStateService(
 
     private fun ShipmentState.toResponse(): ShipmentStateResponse {
         return ShipmentStateResponse(
-            id = this.id,
-            stateId = this.state.id,
+            id = this.id!!,
+            stateId = this.state.id!!,
             stateName = this.state.name,
             name = this.name,
             createdAt = this.createdAt,
@@ -48,17 +53,9 @@ class ShipmentStateService(
 }
 
 data class CreateShipmentStateRequest(
-    val id: Long,
     val stateId: Long,
     val name: String
-) {
-    lateinit var state: com.linogo.gestion.state.domain.State
-        private set
-
-    fun setState(state: com.linogo.gestion.state.domain.State) {
-        this.state = state
-    }
-}
+)
 
 data class ShipmentStateResponse(
     val id: Long,

@@ -2,11 +2,14 @@ package com.linogo.gestion.security
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.linogo.gestion.security.application.AuthResponse
+import com.linogo.gestion.security.application.RoleSummary
 import com.linogo.gestion.security.application.UserResponse
 import com.linogo.gestion.security.infrastructure.AuthController
 import com.linogo.gestion.security.infrastructure.GlobalExceptionHandler
 import com.linogo.gestion.security.infrastructure.JwtAuthenticationFilter
 import com.linogo.gestion.security.infrastructure.JwtTokenProvider
+import com.linogo.gestion.security.infrastructure.RefreshTokenJpaRepository
+import com.linogo.gestion.security.infrastructure.UserRepository
 import com.linogo.gestion.security.service.AuthService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -19,6 +22,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.User
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -40,10 +44,19 @@ class AuthControllerIntegrationTest {
     private lateinit var authService: AuthService
 
     @MockBean
+    private lateinit var userRepository: UserRepository
+
+    @MockBean
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @MockBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
+
+    @MockBean
+    private lateinit var passwordEncoder: PasswordEncoder
+
+    @MockBean
+    private lateinit var refreshTokenRepository: RefreshTokenJpaRepository
 
     @BeforeEach
     fun setUp() {
@@ -62,7 +75,7 @@ class AuthControllerIntegrationTest {
             refreshToken = "refresh_token",
             expiresIn = 900L,
             user = UserResponse(id = "user_1", username = "testuser", email = "test@example.com",
-                fullName = "Test User", role = "USER")
+                fullName = "Test User", roles = listOf(RoleSummary(1L, "USER")), permissions = emptyList())
         )
         org.mockito.Mockito.`when`(authService.login(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
             .thenReturn(response)
@@ -98,7 +111,7 @@ class AuthControllerIntegrationTest {
             refreshToken = "refresh_token",
             expiresIn = 900L,
             user = UserResponse(id = "user_1", username = "newuser", email = "new@example.com",
-                fullName = "New User", role = "USER")
+                fullName = "New User", roles = listOf(RoleSummary(1L, "USER")), permissions = emptyList())
         )
         org.mockito.Mockito.`when`(authService.register(org.mockito.kotlin.any(), org.mockito.kotlin.any()))
             .thenReturn(response)
@@ -133,7 +146,7 @@ class AuthControllerIntegrationTest {
             refreshToken = "new_refresh_token",
             expiresIn = 900L,
             user = UserResponse(id = "user_1", username = "testuser", email = "test@example.com",
-                fullName = "Test User", role = "USER")
+                fullName = "Test User", roles = listOf(RoleSummary(1L, "USER")), permissions = emptyList())
         )
         org.mockito.Mockito.`when`(authService.refreshToken("valid_refresh_token"))
             .thenReturn(response)

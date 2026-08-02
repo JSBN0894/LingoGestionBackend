@@ -1,66 +1,37 @@
 -- V1__create_tables_and_seed_data.sql
--- Migración inicial: Creación de tablas y datos semilla
+-- Migracion inicial: creacion de tablas base.
+--
+-- NOTA (2026): esta migracion nunca se habia ejecutado en ningun entorno real
+-- porque spring.flyway.enabled estaba en false y el esquema lo generaba
+-- Hibernate solo (ddl-auto=update). El archivo original quedo desincronizado
+-- de las entidades reales (nombres de tabla, columnas faltantes) y por eso
+-- se corrigio aqui para que coincida con el esquema que ya existe en
+-- produccion, en vez de intentar crear uno distinto. Todas las sentencias
+-- usan IF NOT EXISTS: si la tabla ya existe (como en produccion), esta
+-- migracion no hace nada mas que registrar el baseline en Flyway.
+--
+-- Los datos semilla (estados, categorias, usuario admin, clientes demo) ya
+-- NO se insertan aqui: los maneja `DataInitializer` (CommandLineRunner) en
+-- el arranque de la aplicacion, que es lo que realmente se ha usado hasta
+-- ahora. Duplicar la siembra en SQL y en codigo generaba riesgo de datos
+-- inconsistentes (nombres de estado con distinta capitalizacion).
 
 -- ===========================================
--- TABLA DE ESTADOS (con soporte para estados anidados)
+-- TABLA DE ESTADOS
 -- ===========================================
-CREATE TABLE IF NOT EXISTS state (
+CREATE TABLE IF NOT EXISTS states (
     id BIGSERIAL PRIMARY KEY,
-    parent_id BIGINT REFERENCES state(id) ON DELETE CASCADE,
-    name VARCHAR(150) NOT NULL UNIQUE,
-    description TEXT,
-    type VARCHAR(50) NOT NULL DEFAULT 'OPERATION',  -- OPERATION, SHIPMENT, DELIVERY
+    name VARCHAR(150) NOT NULL,
+    priority INTEGER NOT NULL,
+    type VARCHAR(50) NOT NULL DEFAULT 'OPERATION',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Índice para consultas por padre
-CREATE INDEX IF NOT EXISTS idx_state_parent ON state(parent_id);
-CREATE INDEX IF NOT EXISTS idx_state_type ON state(type);
-
--- Insertar estados principales y sus sub-estados
--- Estados principales (sin padre)
-INSERT INTO state (name, description, type) VALUES
-    ('Pendiente', 'La orden está pendiente de procesamiento', 'OPERATION'),
-    ('Disponible', 'La orden está disponible para envío', 'OPERATION'),
-    ('Enviado', 'La orden ha sido enviada', 'OPERATION'),
-    ('Finalizado', 'La orden ha sido finalizada exitosamente', 'OPERATION'),
-    ('Novedad', 'La orden presenta novedad que requiere atención', 'OPERATION');
-
--- Sub-estados de "Disponible" (id=2)
-INSERT INTO state (parent_id, name, description, type) VALUES
-    ((SELECT id FROM state WHERE name = 'Disponible'), 
-     'Por reclamar el paquete', 'El paquete está listo para ser reclamado', 'SHIPMENT'),
-    ((SELECT id FROM state WHERE name = 'Disponible'), 
-     'En proceso de entrega', 'El paquete está en proceso de entrega', 'SHIPMENT');
-
--- Sub-estados de "Enviado" (id=3)
-INSERT INTO state (parent_id, name, description, type) VALUES
-    ((SELECT id FROM state WHERE name = 'Enviado'), 
-     'En camino hacia ti', 'El envío está en ruta hacia el destino', 'SHIPMENT'),
-    ((SELECT id FROM state WHERE name = 'Enviado'), 
-     'Viajando a tu destino', 'El envío está en tránsito', 'SHIPMENT'),
-    ((SELECT id FROM state WHERE name = 'Enviado'), 
-     'Tu envío fue devuelto', 'El envío ha sido devuelto al remitente', 'SHIPMENT');
-
--- Sub-estados de "Finalizado" (id=4)
-INSERT INTO state (parent_id, name, description, type) VALUES
-    ((SELECT id FROM state WHERE name = 'Finalizado'), 
-     'Ya puedes recoger tu envío', 'El envío está disponible para recogida', 'SHIPMENT'),
-    ((SELECT id FROM state WHERE name = 'Finalizado'), 
-     'En Centro Logístico de Tránsito', 'El envío está en centro de tránsito', 'SHIPMENT'),
-    ((SELECT id FROM state WHERE name = 'Finalizado'), 
-     'Tu envío fue entregado', 'El envío ha sido entregado al destinatario', 'SHIPMENT'),
-    ((SELECT id FROM state WHERE name = 'Finalizado'), 
-     'En Centro Logístico Destino', 'El envío llegó al centro de destino', 'SHIPMENT');
-
--- Sub-estados de "Novedad" (id=5)
-INSERT INTO state (parent_id, name, description, type) VALUES
-    ((SELECT id FROM state WHERE name = 'Novedad'), 
-     'Envío cancelado', 'El envío ha sido cancelado', 'SHIPMENT');
+CREATE INDEX IF NOT EXISTS idx_states_type ON states(type);
 
 -- ===========================================
--- TABLA DE CATEGORÍAS
+-- TABLA DE CATEGORIAS
 -- ===========================================
 CREATE TABLE IF NOT EXISTS categories (
     id BIGSERIAL PRIMARY KEY,
@@ -75,7 +46,7 @@ CREATE TABLE IF NOT EXISTS categories (
 -- ===========================================
 CREATE TABLE IF NOT EXISTS products (
     id BIGSERIAL PRIMARY KEY,
-    category_id BIGINT REFERENCES categories(id),
+    category_id BIGINT NOT NULL REFERENCES categories(id),
     name VARCHAR(200) NOT NULL,
     price_per_unit BIGINT NOT NULL,
     stock INT NOT NULL DEFAULT 0,
@@ -86,30 +57,39 @@ CREATE TABLE IF NOT EXISTS products (
 );
 
 -- ===========================================
--- TABLA DE CLIENTES
+-- TABLA DE CLIENTES (clave primaria = cedula)
 -- ===========================================
-CREATE TABLE IF NOT EXISTS client (
-    id_user VARCHAR(100) PRIMARY KEY,
-    id_number VARCHAR(50) UNIQUE,
-    name VARCHAR(200) NOT NULL,
-    default_phone VARCHAR(20),
-    default_city VARCHAR(100),
-    default_address VARCHAR(200),
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS customers (
+    cedula BIGINT PRIMARY KEY,
+    name VARCHAR(200) NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS customer_phones (
+    customer_cedula BIGINT NOT NULL REFERENCES customers(cedula) ON DELETE CASCADE,
+    phone VARCHAR(50)
+);
+
+CREATE TABLE IF NOT EXISTS customer_addresses (
+    customer_cedula BIGINT NOT NULL REFERENCES customers(cedula) ON DELETE CASCADE,
+    address VARCHAR(255)
+);
+
+CREATE INDEX IF NOT EXISTS idx_customer_phones_cedula ON customer_phones(customer_cedula);
+CREATE INDEX IF NOT EXISTS idx_customer_addresses_cedula ON customer_addresses(customer_cedula);
+
 -- ===========================================
--- TABLA DE ÓRDENES
+-- TABLA DE ORDENES
 -- ===========================================
 CREATE TABLE IF NOT EXISTS orders (
     id BIGSERIAL PRIMARY KEY,
-    client_id VARCHAR(100) NOT NULL REFERENCES client(id_user),
-    operation_state_id BIGINT NOT NULL REFERENCES state(id),
+    customer_id BIGINT NOT NULL,
+    customer_name VARCHAR(200) NOT NULL,
+    operation_state_id BIGINT NOT NULL REFERENCES states(id),
     order_price BIGINT NOT NULL,
     order_address VARCHAR(200) NOT NULL,
     order_phone VARCHAR(20) NOT NULL,
     order_city VARCHAR(100) NOT NULL,
+    observation VARCHAR(1000),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -128,9 +108,8 @@ CREATE TABLE IF NOT EXISTS order_product (
 );
 
 -- ===========================================
--- ÍNDICES PARA MEJORAR RENDIMIENTO
+-- INDICES PARA MEJORAR RENDIMIENTO
 -- ===========================================
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
-CREATE INDEX IF NOT EXISTS idx_orders_client ON orders(client_id);
+CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 CREATE INDEX IF NOT EXISTS idx_orders_state ON orders(operation_state_id);
-CREATE INDEX IF NOT EXISTS idx_client_id_number ON client(id_number);

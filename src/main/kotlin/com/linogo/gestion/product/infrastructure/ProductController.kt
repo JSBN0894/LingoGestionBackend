@@ -3,6 +3,9 @@ package com.linogo.gestion.product.infrastructure
 import com.linogo.gestion.product.application.ProductService
 import com.linogo.gestion.product.application.CreateProductRequest
 import com.linogo.gestion.product.application.UpdateProductRequest
+import com.linogo.gestion.security.config.Authenticated
+import com.linogo.gestion.security.config.RequiresPermission
+import com.linogo.gestion.security.domain.Permission
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -23,18 +26,21 @@ class ProductController(
 ) {
 
     @PostMapping
+    @RequiresPermission(Permission.PRODUCTS_MANAGE)
     fun create(@Valid @RequestBody request: CreateProductRequest): ResponseEntity<Any> {
         val response = productService.create(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
     @GetMapping("/{id}")
+    @Authenticated
     fun getById(@PathVariable id: Long): ResponseEntity<Any> {
         val response = productService.findById(id)
         return ResponseEntity.ok(response)
     }
 
     @GetMapping
+    @Authenticated
     fun getAll(
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "50") size: Int
@@ -44,12 +50,14 @@ class ProductController(
     }
 
     @GetMapping("/category/{categoryId}")
+    @Authenticated
     fun getByCategoryId(@PathVariable categoryId: Long): ResponseEntity<Any> {
         val responses = productService.findByCategoryId(categoryId)
         return ResponseEntity.ok(responses)
     }
 
     @PutMapping("/{id}")
+    @RequiresPermission(Permission.PRODUCTS_MANAGE)
     fun update(
         @PathVariable id: Long,
         @Valid @RequestBody request: UpdateProductRequest
@@ -59,6 +67,7 @@ class ProductController(
     }
 
     @DeleteMapping("/{id}")
+    @RequiresPermission(Permission.PRODUCTS_MANAGE)
     fun delete(@PathVariable id: Long): ResponseEntity<Void> {
         productService.delete(id)
         return ResponseEntity.noContent().build()

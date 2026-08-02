@@ -5,7 +5,6 @@ import com.linogo.gestion.category.application.CreateCategoryRequest
 import com.linogo.gestion.category.application.UpdateCategoryRequest
 import com.linogo.gestion.category.domain.Category
 import com.linogo.gestion.category.infrastructure.CategoryRepository
-import com.linogo.gestion.exception.AlreadyExistsException
 import com.linogo.gestion.exception.NotFoundException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -53,7 +52,6 @@ class CategoryServiceTest {
         )
 
         createRequest = CreateCategoryRequest(
-            id = 3L,
             name = "Metal",
             parentId = 1L
         )
@@ -63,7 +61,6 @@ class CategoryServiceTest {
     fun `create should save category when data is valid`() {
         // Given
         val savedCategory = Category(id = 3L, name = "Metal", parent = parentCategory)
-        `when`(categoryRepository.existsById(3L)).thenReturn(false)
         `when`(categoryRepository.findById(1L)).thenReturn(Optional.of(parentCategory))
         `when`(categoryRepository.save(org.mockito.ArgumentMatchers.any())).thenReturn(savedCategory)
 
@@ -79,17 +76,6 @@ class CategoryServiceTest {
     }
 
     @Test
-    fun `create should throw AlreadyExistsException when ID already exists`() {
-        // Given
-        `when`(categoryRepository.existsById(createRequest.id)).thenReturn(true)
-
-        // When & Then
-        assertThrows(AlreadyExistsException::class.java) {
-            categoryService.create(createRequest)
-        }
-    }
-
-    @Test
     fun `findById should return response when exists`() {
         // Given
         `when`(categoryRepository.findById(2L)).thenReturn(Optional.of(childCategory))
@@ -100,6 +86,17 @@ class CategoryServiceTest {
         // Then
         assertEquals("Silicona", response.name)
         assertEquals(1L, response.parentId)
+    }
+
+    @Test
+    fun `findById should throw NotFoundException when not exists`() {
+        // Given
+        `when`(categoryRepository.findById(999L)).thenReturn(Optional.empty())
+
+        // When & Then
+        assertThrows(NotFoundException::class.java) {
+            categoryService.findById(999L)
+        }
     }
 
     @Test

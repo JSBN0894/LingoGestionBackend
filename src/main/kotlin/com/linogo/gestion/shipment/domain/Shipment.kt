@@ -1,6 +1,7 @@
 package com.linogo.gestion.shipment.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.linogo.gestion.carrier.domain.Carrier
 import com.linogo.gestion.order.domain.Order
 import com.linogo.gestion.shipmentstate.domain.ShipmentState
 import jakarta.persistence.*
@@ -22,8 +23,9 @@ data class Shipment(
     @JoinColumn(name = "shipping_state_id", foreignKey = ForeignKey(name = "fk_shipment_state"))
     val shippingState: ShipmentState,
 
-    @Column(nullable = false)
-    val carrier: String = "Inter rapidisimo",
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "carrier_id", foreignKey = ForeignKey(name = "fk_shipment_carrier"))
+    val carrier: Carrier,
 
     @Column(nullable = false)
     val isCashOnDelivery: Boolean = true,

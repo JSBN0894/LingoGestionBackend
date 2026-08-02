@@ -90,7 +90,7 @@ class CreateOrderCompleteService(
             id = this.id!!,
             customerId = this.customerId,
             customerName = this.customerName,
-            operationStateId = this.operationState.id,
+            operationStateId = this.operationState.id!!,
             operationStateName = this.operationState.name,
             orderPrice = this.orderPrice,
             orderAddress = this.orderAddress,

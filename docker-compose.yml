@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gestion-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: gestion_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d gestion_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gestion-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # El perfil "flyway" ya no hace falta: Flyway ahora esta habilitado
+      # por defecto en application.properties (ver migraciones V1-V4).
+      SPRING_PROFILES_ACTIVE: dev
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: gestion_db
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      JWT_SECRET: RGV2U2VjcmV0S2V5Rm9yRGV2ZWxvcG1lbnRPbmx5TXVzdEJlQ2hhbmdlZEluUHJvZHVjdGlvbkVudmlyb25tZW50
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./src/main/resources/static:/app/static
+      - uploads_data:/app/uploads
+
+volumes:
+  postgres_data:
+    driver: local
+  uploads_data:
+    driver: local

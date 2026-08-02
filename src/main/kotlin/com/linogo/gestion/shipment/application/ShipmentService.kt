@@ -1,5 +1,7 @@
 package com.linogo.gestion.shipment.application
 
+import com.linogo.gestion.carrier.infrastructure.CarrierRepository
+import com.linogo.gestion.exception.NotFoundException
 import com.linogo.gestion.order.infrastructure.OrderRepository
 import com.linogo.gestion.shipment.domain.Shipment
 import com.linogo.gestion.shipment.infrastructure.ShipmentRepository
@@ -15,7 +17,8 @@ class ShipmentService(
     private val shipmentRepository: ShipmentRepository,
     private val orderRepository: OrderRepository,
     private val shipmentStateRepository: ShipmentStateRepository,
-    private val trackingRepository: ShipmentTrackingRepository
+    private val trackingRepository: ShipmentTrackingRepository,
+    private val carrierRepository: CarrierRepository
 ) {
 
     @Transactional
@@ -26,10 +29,13 @@ class ShipmentService(
         val shipmentState = shipmentStateRepository.findById(request.shippingStateId)
             .orElseThrow { IllegalArgumentException("ShipmentState with id ${request.shippingStateId} not found") }
 
+        val carrier = carrierRepository.findById(request.carrierId)
+            .orElseThrow { NotFoundException("Carrier", request.carrierId) }
+
         val shipment = Shipment(
             order = order,
             shippingState = shipmentState,
-            carrier = request.carrier,
+            carrier = carrier,
             isCashOnDelivery = request.isCashOnDelivery,
             shippingCost = request.shippingCost,
             estimateDeliveryDate = request.estimateDeliveryDate,
@@ -67,9 +73,12 @@ class ShipmentService(
         val shipmentState = shipmentStateRepository.findById(request.shippingStateId)
             .orElseThrow { IllegalArgumentException("ShipmentState with id ${request.shippingStateId} not found") }
 
+        val carrier = carrierRepository.findById(request.carrierId)
+            .orElseThrow { NotFoundException("Carrier", request.carrierId) }
+
         val updated = shipment.copy(
             shippingState = shipmentState,
-            carrier = request.carrier,
+            carrier = carrier,
             isCashOnDelivery = request.isCashOnDelivery,
             shippingCost = request.shippingCost,
             estimateDeliveryDate = request.estimateDeliveryDate,
@@ -133,9 +142,10 @@ class ShipmentService(
         return ShipmentResponse(
             id = this.id!!,
             orderId = this.order.id!!,
-            carrier = this.carrier,
+            carrierId = this.carrier.id!!,
+            carrierName = this.carrier.name,
             isCashOnDelivery = this.isCashOnDelivery,
-            shippingStateId = this.shippingState.id,
+            shippingStateId = this.shippingState.id!!,
             shippingStateName = this.shippingState.name,
             shippingCost = this.shippingCost,
             estimateDeliveryDate = this.estimateDeliveryDate,
@@ -149,7 +159,7 @@ class ShipmentService(
 
 data class CreateShipmentRequest(
     val orderId: Long,
-    val carrier: String = "Inter rapidisimo",
+    val carrierId: Long,
     val isCashOnDelivery: Boolean = true,
     val shippingStateId: Long,
     val shippingCost: Long? = null,
@@ -160,7 +170,7 @@ data class CreateShipmentRequest(
 
 data class UpdateShipmentRequest(
     val shippingStateId: Long,
-    val carrier: String = "Inter rapidisimo",
+    val carrierId: Long,
     val isCashOnDelivery: Boolean = true,
     val shippingCost: Long? = null,
     val estimateDeliveryDate: LocalDateTime? = null,
@@ -171,7 +181,8 @@ data class UpdateShipmentRequest(
 data class ShipmentResponse(
     val id: Long,
     val orderId: Long,
-    val carrier: String,
+    val carrierId: Long,
+    val carrierName: String,
     val isCashOnDelivery: Boolean,
     val shippingStateId: Long,
     val shippingStateName: String,

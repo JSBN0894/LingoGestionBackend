@@ -1,10 +1,15 @@
 package com.linogo.gestion.security.infrastructure
 
 import com.linogo.gestion.security.application.AuthResponse
+import com.linogo.gestion.security.application.ChangePasswordRequest
 import com.linogo.gestion.security.application.LoginRequest
 import com.linogo.gestion.security.application.RefreshTokenRequest
 import com.linogo.gestion.security.application.RegisterRequest
-import com.linogo.gestion.security.config.AdminOnly
+import com.linogo.gestion.security.application.UserMeResponse
+import com.linogo.gestion.security.application.toUserMeResponse
+import com.linogo.gestion.security.config.Authenticated
+import com.linogo.gestion.security.config.RequiresPermission
+import com.linogo.gestion.security.domain.Permission
 import com.linogo.gestion.security.service.AuthService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -12,21 +17,27 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
+import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/auth")
-@Tag(name = "Autenticación", description = "Endpoints para login, registro y gestión de tokens")
+@Tag(name = "Autenticacion", description = "Endpoints para login, registro y gestion de tokens")
 class AuthController(
-    private val authService: AuthService
+    private val authService: AuthService,
+    private val userRepository: UserRepository,
+    private val passwordEncoder: PasswordEncoder,
+    private val refreshTokenRepository: RefreshTokenJpaRepository
 ) {
 
     @PostMapping("/login")
-    @Operation(summary = "Iniciar sesión", description = "Autentica un usuario y devuelve access token y refresh token")
+    @Operation(summary = "Iniciar sesion", description = "Autentica un usuario y devuelve access token y refresh token")
     @ApiResponse(responseCode = "200", description = "Login exitoso")
-    @ApiResponse(responseCode = "401", description = "Credenciales inválidas")
+    @ApiResponse(responseCode = "401", description = "Credenciales invalidas")
     fun login(
         @Valid @RequestBody loginRequest: LoginRequest,
         request: HttpServletRequest
@@ -36,10 +47,10 @@ class AuthController(
     }
 
     @PostMapping("/register")
-    @AdminOnly
+    @RequiresPermission(Permission.USERS_MANAGE)
     @Operation(summary = "Registrar usuario (solo ADMIN)", description = "Crea un nuevo usuario y devuelve tokens de acceso")
     @ApiResponse(responseCode = "200", description = "Registro exitoso")
-    @ApiResponse(responseCode = "400", description = "Datos inválidos o usuario ya existe")
+    @ApiResponse(responseCode = "400", description = "Datos invalidos o usuario ya existe")
     @ApiResponse(responseCode = "403", description = "No tiene permisos de administrador")
     fun register(
         @Valid @RequestBody request: RegisterRequest,
@@ -52,18 +63,53 @@ class AuthController(
     @PostMapping("/refresh")
     @Operation(summary = "Refrescar token", description = "Obtiene un nuevo access token usando el refresh token")
     @ApiResponse(responseCode = "200", description = "Token refrescado exitosamente")
-    @ApiResponse(responseCode = "401", description = "Refresh token inválido o expirado")
+    @ApiResponse(responseCode = "401", description = "Refresh token invalido o expirado")
     fun refresh(@Valid @RequestBody request: RefreshTokenRequest): ResponseEntity<AuthResponse> {
         return ResponseEntity.ok(authService.refreshToken(request.refreshToken))
     }
 
     @PostMapping("/logout")
-    @Operation(summary = "Cerrar sesión", description = "Invalida los tokens del usuario autenticado")
+    @Operation(summary = "Cerrar sesion", description = "Invalida los tokens del usuario autenticado")
     @ApiResponse(responseCode = "200", description = "Logout exitoso")
     fun logout(@AuthenticationPrincipal userDetails: UserDetails): ResponseEntity<Map<String, String>> {
-        // En producción, obtener el userId del token o de la base de datos
+        // En produccion, obtener el userId del token o de la base de datos
         authService.logout(userDetails.username)
         return ResponseEntity.ok(mapOf("message" to "Sesión cerrada exitosamente"))
+    }
+
+    @PostMapping("/change-password")
+    @Authenticated
+    @Transactional
+    @Operation(summary = "Cambiar contraseña propia", description = "Requiere la contraseña actual para autorizar el cambio")
+    @ApiResponse(responseCode = "200", description = "Contraseña actualizada")
+    @ApiResponse(responseCode = "401", description = "Contraseña actual incorrecta")
+    fun changePassword(
+        @Valid @RequestBody request: ChangePasswordRequest,
+        @AuthenticationPrincipal userDetails: UserDetails
+    ): ResponseEntity<Map<String, String>> {
+        val user = userRepository.findByUsername(userDetails.username)
+            ?: throw IllegalArgumentException("Usuario no encontrado")
+
+        if (!passwordEncoder.matches(request.currentPassword, user.password)) {
+            throw BadCredentialsException("La contraseña actual es incorrecta")
+        }
+
+        user.changePassword(passwordEncoder.encode(request.newPassword))
+        userRepository.save(user)
+        refreshTokenRepository.deleteByUserId(user.id!!)
+
+        return ResponseEntity.ok(mapOf("message" to "Contraseña actualizada correctamente"))
+    }
+
+    @GetMapping("/me")
+    @Authenticated
+    @Operation(summary = "Obtener perfil del usuario actual", description = "Devuelve la informacion del usuario autenticado")
+    @ApiResponse(responseCode = "200", description = "Perfil obtenido exitosamente")
+    @ApiResponse(responseCode = "401", description = "No autenticado")
+    fun getMe(@AuthenticationPrincipal userDetails: UserDetails): ResponseEntity<UserMeResponse> {
+        val user = userRepository.findByUsername(userDetails.username)
+            ?: throw IllegalArgumentException("Usuario no encontrado")
+        return ResponseEntity.ok(user.toUserMeResponse())
     }
 
     private fun getClientIp(request: HttpServletRequest): String {
